@@ -1,0 +1,84 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Space+Grotesk:wght@400;500;650;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap');
+@import "tailwindcss";
+
+@theme {
+  --font-sans: 'Inter', ui-sans-serif, system-ui, sans-serif;
+  --font-display: 'Space Grotesk', sans-serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, monospace;
+}
+
+/* Custom scrollbars */
+.custom-scrollbar::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: rgba(15, 23, 42, 0.4);
+  border-radius: 9999px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: rgba(51, 65, 85, 0.8);
+  border-radius: 9999px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: rgba(45, 212, 191, 0.6);
+}
+
+/* @media print layouts for pixel-perfect PDF export */
+@media print {
+  body {
+    background-color: white !important;
+    color: black !important;
+  }
+  
+  /* Hide surrounding interface elements */
+  header, 
+  footer, 
+  main, 
+  #root > div > header, 
+  #root > div > main, 
+  #root > div > footer,
+  .no-print {
+    display: none !important;
+  }
+  
+  /* Reset modal positioning to flat page flow */
+  .fixed.inset-0 {
+    position: absolute !important;
+    background: white !important;
+    backdrop-filter: none !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    z-index: 9999 !important;
+    display: block !important;
+    overflow: visible !important;
+  }
+  
+  /* Make report container fill the entire page cleanly without boundaries */
+  #report-print-dialog {
+    border: none !important;
+    box-shadow: none !important;
+    max-width: 100% !important;
+    width: 100% !important;
+    max-height: none !important;
+    height: auto !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    background: white !important;
+    color: #000000 !important;
+    overflow: visible !important;
+  }
+  
+  /* Exclude close buttons, utility notices, and generation controls from the PDF */
+  button,
+  .no-print,
+  #report-print-dialog button,
+  #report-print-dialog .no-print {
+    display: none !important;
+    visibility: hidden !important;
+  }
+}
+

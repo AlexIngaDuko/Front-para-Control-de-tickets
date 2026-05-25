@@ -1,0 +1,10 @@
+{
+  "name": "Control de Tickets de Alimentación",
+  "description": "Sistema de escaneo de tickets de alimentación hospitalaria con control de duplicados, métricas nutricionales e historial de consumo para personal médico.",
+  "requestFramePermissions": [
+    "camera"
+  ],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}
