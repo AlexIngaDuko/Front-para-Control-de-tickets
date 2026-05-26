@@ -73,48 +73,48 @@ export default function NotificationCenter({
     switch (type) {
       case 'success':
         return {
-          bdColor: 'border-l-4 border-l-emerald-500',
-          icon: <CheckCircle2 className="w-4 h-4 text-emerald-400" />,
-          bgColor: 'bg-emerald-500/5'
+          bdColor: 'border-l-4 border-l-[#00A089]',
+          icon: <CheckCircle2 className="w-4 h-4 text-[#00A089]" />,
+          bgColor: 'bg-[#00A089]/6'
         };
       case 'warning':
         return {
-          bdColor: 'border-l-4 border-l-amber-500',
-          icon: <ShieldAlert className="w-4 h-4 text-amber-400" />,
-          bgColor: 'bg-amber-500/5'
+          bdColor: 'border-l-4 border-l-[#F9B719]',
+          icon: <ShieldAlert className="w-4 h-4 text-[#F9B719]" />,
+          bgColor: 'bg-[#F9B719]/6'
         };
       case 'alert':
         return {
-          bdColor: 'border-l-4 border-l-red-500',
-          icon: <ShieldAlert className="w-4 h-4 text-red-400" />,
-          bgColor: 'bg-red-500/5'
+          bdColor: 'border-l-4 border-l-[#B51A82]',
+          icon: <ShieldAlert className="w-4 h-4 text-[#B51A82]" />,
+          bgColor: 'bg-[#B51A82]/6'
         };
       default:
         return {
-          bdColor: 'border-l-4 border-l-indigo-500',
-          icon: <Info className="w-4 h-4 text-indigo-400" />,
-          bgColor: 'bg-indigo-500/5'
+          bdColor: 'border-l-4 border-l-[#342D86]',
+          icon: <Info className="w-4 h-4 text-[#342D86]" />,
+          bgColor: 'bg-[#342D86]/6'
         };
     }
   };
 
   return (
-    <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 shadow-xl space-y-6" id="notification-center">
+    <div className="bg-white border border-slate-200 rounded-3xl p-6 shadow-md space-y-6" id="notification-center">
       
       {/* Notifications header row */}
       <div className="flex items-center justify-between gap-4">
         <div className="flex items-center gap-3">
-          <div className="p-2.5 rounded-2xl bg-teal-500/10 text-teal-400 relative">
+          <div className="p-2.5 rounded-2xl bg-[#342D86]/10 text-[#342D86] relative">
             <Bell className="w-5 h-5" id="bell-icon-notif" />
             {unreadCount > 0 && (
-              <span className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-[10px] font-black text-white rounded-full flex items-center justify-center animate-bounce">
+              <span className="absolute -top-1 -right-1 w-5 h-5 bg-[#B51A82] text-[10px] font-black text-white rounded-full flex items-center justify-center animate-bounce">
                 {unreadCount}
               </span>
             )}
           </div>
           <div>
-            <h3 className="font-sans font-semibold text-slate-100 text-lg uppercase tracking-wide">Notificaciones Push</h3>
-            <p className="text-xs text-slate-400">Disponibilidad de comida y alertas de consumo</p>
+            <h3 className="font-sans font-black text-[#342D86] text-lg uppercase tracking-wide">Notificaciones Push</h3>
+            <p className="text-xs text-slate-500">Disponibilidad de comida y alertas de consumo</p>
           </div>
         </div>
 
@@ -123,7 +123,7 @@ export default function NotificationCenter({
           <button
             type="button"
             onClick={() => setSoundEnabled(!soundEnabled)}
-            className="p-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 rounded-xl transition-all cursor-pointer"
+            className="p-1.5 bg-slate-50 hover:bg-slate-100 text-[#342D86] border border-slate-200 rounded-xl transition-all cursor-pointer shadow-xs"
             title={soundEnabled ? 'Silenciar sonidos' : 'Activar comentarios en sonido'}
           >
             {soundEnabled ? <Volume2 className="w-4 h-4" /> : <VolumeX className="w-4 h-4" />}
@@ -132,7 +132,7 @@ export default function NotificationCenter({
           <button
             type="button"
             onClick={onClearAll}
-            className="p-1.5 bg-slate-800 hover:bg-red-500/20 text-slate-400 hover:text-red-400 border border-slate-700 hover:border-red-500/30 rounded-xl transition-all cursor-pointer text-xs"
+            className="p-1.5 bg-slate-50 hover:bg-rose-50 text-slate-500 hover:text-[#B51A82] border border-slate-200 hover:border-rose-200 rounded-xl transition-all cursor-pointer text-xs shadow-xs"
             title="Limpiar avisos"
           >
             <Trash2 className="w-4 h-4" />
@@ -141,12 +141,12 @@ export default function NotificationCenter({
       </div>
 
       {/* Toggles bar */}
-      <div className="flex gap-2 p-1 bg-slate-950 rounded-xl border border-slate-800 select-none">
+      <div className="flex gap-2 p-1 bg-slate-50 rounded-xl border border-slate-200 select-none">
         <button
           type="button"
           onClick={() => setActiveTab('ALL')}
-          className={`flex-1 py-1.5 rounded-lg text-xs font-semibold px-3 transition-all cursor-pointer ${
-            activeTab === 'ALL' ? 'bg-slate-800 text-teal-400 shadow' : 'text-slate-500 hover:text-slate-300'
+          className={`flex-1 py-1.5 rounded-lg text-xs font-black px-3 transition-all cursor-pointer ${
+            activeTab === 'ALL' ? 'bg-white text-[#342D86] border border-slate-200 shadow-xs' : 'text-slate-500 hover:text-slate-700'
           }`}
         >
           Todas ({notifications.length})
@@ -154,8 +154,8 @@ export default function NotificationCenter({
         <button
           type="button"
           onClick={() => setActiveTab('UNREAD')}
-          className={`flex-1 py-1.5 rounded-lg text-xs font-semibold px-3 transition-all cursor-pointer ${
-            activeTab === 'UNREAD' ? 'bg-slate-800 text-teal-400 shadow' : 'text-slate-500 hover:text-slate-300'
+          className={`flex-1 py-1.5 rounded-lg text-xs font-black px-3 transition-all cursor-pointer ${
+            activeTab === 'UNREAD' ? 'bg-white text-[#342D86] border border-slate-200 shadow-xs' : 'text-slate-500 hover:text-slate-700'
           }`}
         >
           No Leídas ({unreadCount})
@@ -163,13 +163,13 @@ export default function NotificationCenter({
       </div>
 
       {/* Push simulation panel */}
-      <div className="bg-slate-950/80 p-4 rounded-2xl border border-slate-800/80 space-y-3">
+      <div className="bg-slate-50 p-4 rounded-2xl border border-slate-200 space-y-3 shadow-xs">
         <div className="flex items-center justify-between">
-          <span className="text-[10px] text-slate-400 uppercase tracking-widest font-black flex items-center gap-1 leading-none">
-            <Sparkles className="w-3.5 h-3.5 text-teal-400" />
+          <span className="text-[10px] text-slate-600 uppercase tracking-widest font-black flex items-center gap-1 leading-none">
+            <Sparkles className="w-3.5 h-3.5 text-[#00A089]" />
             Simulador de Envío Push
           </span>
-          <span className="text-[9px] text-indigo-400 font-semibold uppercase">Estación de Nutrición</span>
+          <span className="text-[9px] text-[#582A85] font-black uppercase">Estación de Nutrición</span>
         </div>
 
         {/* Multi-triggers buttons */}
@@ -177,40 +177,40 @@ export default function NotificationCenter({
           <button
             type="button"
             onClick={() => triggerPresetNotif(1)}
-            className="flex-1 bg-slate-900 hover:bg-emerald-500/10 hover:text-emerald-400 border border-slate-800 text-[10px] font-semibold text-slate-300 py-1.5 px-2.5 rounded-lg transition-all cursor-pointer text-left truncate"
+            className="flex-1 bg-white hover:bg-[#00A089]/6 border border-slate-200 text-[10px] font-bold text-slate-700 py-1.5 px-2 rounded-lg transition-all cursor-pointer text-left truncate hover:text-[#00A089] shadow-xs"
           >
             🟢 Activar Almuerzo
           </button>
           <button
             type="button"
             onClick={() => triggerPresetNotif(2)}
-            className="flex-1 bg-slate-900 hover:bg-amber-500/10 hover:text-amber-400 border border-slate-800 text-[10px] font-semibold text-slate-300 py-1.5 px-2.5 rounded-lg transition-all cursor-pointer text-left truncate"
+            className="flex-1 bg-white hover:bg-[#F9B719]/6 border border-slate-200 text-[10px] font-bold text-slate-700 py-1.5 px-2 rounded-lg transition-all cursor-pointer text-left truncate hover:text-[#342D86] shadow-xs"
           >
             🟡 Avisar Umbral Kcal
           </button>
           <button
             type="button"
             onClick={() => triggerPresetNotif(3)}
-            className="flex-1 bg-slate-900 hover:bg-red-500/10 hover:text-red-400 border border-slate-800 text-[10px] font-semibold text-slate-300 py-1.5 px-2.5 rounded-lg transition-all cursor-pointer text-left truncate"
+            className="flex-1 bg-white hover:bg-[#B51A82]/6 border border-slate-200 text-[10px] font-bold text-slate-700 py-1.5 px-2 rounded-lg transition-all cursor-pointer text-left truncate hover:text-[#B51A82] shadow-xs"
           >
             🔴 Simular Fraude DNI
           </button>
         </div>
 
         {/* Mini Custom Form for testing custom notification */}
-        <form onSubmit={handleCreateCustomPush} className="space-y-2 border-t border-slate-900 pt-3 text-xs">
+        <form onSubmit={handleCreateCustomPush} className="space-y-2 border-t border-slate-200 pt-3 text-xs">
           <div className="grid grid-cols-3 gap-2">
             <input
               type="text"
               placeholder="Asunto (Alerta...)"
               value={customTitle}
               onChange={(e) => setCustomTitle(e.target.value)}
-              className="col-span-2 bg-slate-900 border border-slate-800 rounded-lg py-1 px-2 text-[11px] text-slate-300 focus:outline-none placeholder-slate-600 focus:border-teal-400"
+              className="col-span-2 bg-white border border-slate-200 rounded-lg py-1 px-2 text-[11px] text-slate-800 focus:outline-none placeholder-slate-400 focus:border-[#342D86] font-semibold"
             />
             <select
               value={customType}
               onChange={(e) => setCustomType(e.target.value as any)}
-              className="bg-slate-900 border border-slate-800 rounded-lg py-1 px-1.5 text-[10px] text-slate-400 cursor-pointer focus:outline-none"
+              className="bg-white border border-slate-200 rounded-lg py-1 px-1.5 text-[10px] text-slate-600 font-bold cursor-pointer focus:outline-none"
             >
               <option value="info">Info</option>
               <option value="success">Comida</option>
@@ -224,11 +224,11 @@ export default function NotificationCenter({
               placeholder="Escribe el mensaje de la alerta push..."
               value={customMessage}
               onChange={(e) => setCustomMessage(e.target.value)}
-              className="flex-1 bg-slate-900 border border-slate-800 rounded-lg py-1 px-2 text-[11px] text-slate-300 focus:outline-none placeholder-slate-600 focus:border-teal-400"
+              className="flex-1 bg-white border border-slate-200 rounded-lg py-1 px-2 text-[11px] text-slate-800 focus:outline-none placeholder-slate-400 focus:border-[#342D86] font-semibold"
             />
             <button
               type="submit"
-              className="p-1 px-3.5 bg-teal-500 hover:bg-teal-600 rounded-lg text-slate-950 font-bold transition-all cursor-pointer flex items-center justify-center placeholder-slate-600"
+              className="p-1 px-3.5 bg-[#342D86] hover:bg-[#342D86]/90 text-white rounded-lg font-black transition-all cursor-pointer flex items-center justify-center shadow-xs"
               title="Publicar alerta"
             >
               <Send className="w-3 h-3" />
@@ -249,7 +249,7 @@ export default function NotificationCenter({
                 initial={{ opacity: 0, x: 20 }}
                 animate={{ opacity: 1, x: 0 }}
                 exit={{ opacity: 0, x: -20 }}
-                className={`p-3 rounded-xl ${styles.bdColor} ${styles.bgColor} border border-slate-800/40 relative flex gap-3 group transition-all truncate`}
+                className={`p-3 rounded-xl ${styles.bdColor} ${styles.bgColor} border border-slate-200 relative flex gap-3 group transition-all shadow-xs`}
               >
                 <div className="mt-0.5 flex-shrink-0">
                   {styles.icon}
@@ -257,17 +257,17 @@ export default function NotificationCenter({
                 
                 <div className="flex-1 min-w-0 pr-6">
                   <div className="flex items-center gap-1.5">
-                    <span className="font-sans font-semibold text-slate-200 text-xs truncate">
+                    <span className="font-sans font-black text-[#342D86] text-xs truncate">
                       {notification.title}
                     </span>
                     {!notification.read && (
-                      <span className="w-1.5 h-1.5 bg-indigo-400 rounded-full flex-shrink-0" title="Alerta no leída"></span>
+                      <span className="w-1.5 h-1.5 bg-[#B51A82] rounded-full flex-shrink-0 animate-pulse" title="Alerta no leída"></span>
                     )}
                   </div>
-                  <p className="text-[11px] text-slate-400 mt-0.5 leading-normal break-words whitespace-normal">
+                  <p className="text-[11px] text-slate-700 font-semibold mt-0.5 leading-normal break-words whitespace-normal">
                     {notification.message}
                   </p>
-                  <span className="text-[9px] text-slate-500 font-mono mt-1 block">
+                  <span className="text-[9px] text-slate-500 font-mono mt-1 block font-semibold">
                     Enviado a las {notification.timestamp}
                   </span>
                 </div>
@@ -277,7 +277,7 @@ export default function NotificationCenter({
                   <button
                     type="button"
                     onClick={() => onMarkRead(notification.id)}
-                    className="absolute right-2 top-2 p-1 rounded-md bg-slate-800 hover:bg-teal-500/20 text-slate-400 hover:text-teal-400 transition-all cursor-pointer group-hover:opacity-100"
+                    className="absolute right-2 top-2 p-1.5 rounded-md bg-white hover:bg-[#00A089]/10 text-slate-400 hover:text-[#00A089] transition-all border border-slate-200 cursor-pointer shadow-xs"
                     title="Marcar leído"
                   >
                     <Check className="w-3 h-3" />
@@ -288,8 +288,8 @@ export default function NotificationCenter({
           })}
 
           {displayedNotifications.length === 0 && (
-            <div className="text-center py-8 text-slate-600 font-mono text-xs">
-              <BellOff className="w-8 h-8 text-slate-700 mx-auto mb-1" />
+            <div className="text-center py-8 text-slate-450 font-sans font-bold text-xs space-y-1">
+              <BellOff className="w-8 h-8 text-slate-350 mx-auto mb-1.5" />
               <span>Sin notificaciones en esta sección.</span>
             </div>
           )}

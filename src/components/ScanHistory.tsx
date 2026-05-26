@@ -51,34 +51,34 @@ export default function ScanHistory({ records, onClearRecords, onResetToDefault 
     switch (status) {
       case 'VALID_COMPLETED':
         return (
-          <span className="px-2.5 py-1 text-[10px] font-bold rounded-lg bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 inline-flex items-center gap-1">
-            <span className="w-1.5 h-1.5 bg-emerald-400 rounded-full"></span>
+          <span className="px-2.5 py-1 text-[10px] font-black rounded-lg bg-[#00A089]/8 text-[#00A089] border border-[#00A089]/20 inline-flex items-center gap-1">
+            <span className="w-1.5 h-1.5 bg-[#00A089] rounded-full"></span>
             Registrado
           </span>
         );
       case 'DUPLICATE':
         return (
-          <span className="px-2.5 py-1 text-[10px] font-bold rounded-lg bg-rose-500/10 text-rose-400 border border-rose-500/20 inline-flex items-center gap-1">
-            <span className="w-1.5 h-1.5 bg-rose-500 rounded-full animate-ping"></span>
+          <span className="px-2.5 py-1 text-[10px] font-black rounded-lg bg-[#B51A82]/8 text-[#B51A82] border border-[#B51A82]/20 inline-flex items-center gap-1">
+            <span className="w-1.5 h-1.5 bg-[#B51A82] rounded-full animate-ping"></span>
             Duplicado Bloqueado
           </span>
         );
       case 'OUT_OF_SCHEDULE':
         return (
-          <span className="px-2.5 py-1 text-[10px] font-bold rounded-lg bg-amber-500/10 text-amber-400 border border-amber-500/20 inline-flex items-center gap-1">
-            <span className="w-1.5 h-1.5 bg-amber-400 rounded-full"></span>
+          <span className="px-2.5 py-1 text-[10px] font-black rounded-lg bg-[#F9B719]/10 text-[#342D86] border border-[#F9B719]/25 inline-flex items-center gap-1">
+            <span className="w-1.5 h-1.5 bg-[#F9B719] rounded-full"></span>
             Fuera de Horario
           </span>
         );
       case 'INVALID_CODE':
         return (
-          <span className="px-2.5 py-1 text-[10px] font-bold rounded-lg bg-red-400/10 text-red-300 border border-red-500/10 inline-flex items-center gap-1">
+          <span className="px-2.5 py-1 text-[10px] font-black rounded-lg bg-[#B51A82]/8 text-[#B51A82] border border-[#B51A82]/15 inline-flex items-center gap-1">
             No Registrado
           </span>
         );
       case 'SUSPENDED_WORKER':
         return (
-          <span className="px-2.5 py-1 text-[10px] font-bold rounded-lg bg-slate-500/20 text-slate-400 border border-slate-500/10 inline-flex items-center gap-1">
+          <span className="px-2.5 py-1 text-[10px] font-black rounded-lg bg-[#582A85]/8 text-[#582A85] border border-[#582A85]/15 inline-flex items-center gap-1">
             No Autorizado
           </span>
         );
@@ -385,17 +385,17 @@ export default function ScanHistory({ records, onClearRecords, onResetToDefault 
   };
 
   return (
-    <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 shadow-xl space-y-6" id="scan-history">
+    <div className="bg-white border border-slate-200 rounded-3xl p-6 shadow-md space-y-6" id="scan-history">
       
       {/* Table Header Section */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div className="flex items-center gap-3">
-          <div className="p-2.5 rounded-2xl bg-teal-500/10 text-teal-400">
+          <div className="p-2.5 rounded-2xl bg-[#342D86]/10 text-[#342D86]">
             <ClipboardList className="w-5 h-5" id="history-header-icon" />
           </div>
           <div>
-            <h3 className="font-sans font-bold text-slate-100 text-lg uppercase tracking-wide">Historial y Control Diario</h3>
-            <p className="text-xs text-slate-400">Registro en tiempo real de alimentos suministrados hoy</p>
+            <h3 className="font-sans font-black text-[#342D86] text-lg uppercase tracking-wide">Historial y Control Diario</h3>
+            <p className="text-xs text-slate-500">Registro en tiempo real de alimentos suministrados hoy</p>
           </div>
         </div>
 
@@ -404,7 +404,7 @@ export default function ScanHistory({ records, onClearRecords, onResetToDefault 
           <button
             type="button"
             onClick={() => setShowReportModal(true)}
-            className="bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold px-4 py-2 rounded-xl transition-all flex items-center gap-1.5 cursor-pointer shadow-lg shadow-indigo-600/15"
+            className="bg-[#582A85] hover:bg-[#582A85]/90 text-white text-xs font-bold px-4 py-2 rounded-xl transition-all flex items-center gap-1.5 cursor-pointer shadow-md"
             id="btn-gen-report"
           >
             <Calendar className="w-4 h-4" />
@@ -414,7 +414,7 @@ export default function ScanHistory({ records, onClearRecords, onResetToDefault 
           <button
             type="button"
             onClick={downloadCSV}
-            className="bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 text-xs font-semibold px-3 py-2 rounded-xl transition-all flex items-center gap-1.5 cursor-pointer"
+            className="bg-[#342D86] hover:bg-[#342D86]/90 text-white border border-[#342D86]/10 text-xs font-bold px-3 py-2 rounded-xl transition-all flex items-center gap-1.5 cursor-pointer shadow-sm"
             title="Exportar archivo CSV para Excel"
           >
             <FileSpreadsheet className="w-4 h-4" />
@@ -424,18 +424,18 @@ export default function ScanHistory({ records, onClearRecords, onResetToDefault 
           <button
             type="button"
             onClick={downloadPDF}
-            className="bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 text-xs font-semibold px-3 py-2 rounded-xl transition-all flex items-center gap-1.5 cursor-pointer"
+            className="bg-[#00A089] hover:bg-[#00A089]/90 text-white border border-[#00A089]/10 text-xs font-bold px-3 py-2 rounded-xl transition-all flex items-center gap-1.5 cursor-pointer shadow-sm"
             title="Descargar archivo PDF oficial al instante"
             id="btn-export-pdf"
           >
-            <FileText className="w-4 h-4 text-emerald-500 animate-pulse" />
+            <FileText className="w-4 h-4 text-white animate-pulse" />
             Exportar PDF
           </button>
 
           <button
             type="button"
             onClick={onClearRecords}
-            className="p-2 bg-slate-800 hover:bg-red-500/20 hover:text-red-400 text-slate-400 border border-slate-700 hover:border-red-500/30 rounded-xl transition-all cursor-pointer"
+            className="p-2 bg-slate-50 hover:bg-rose-50 hover:text-[#B51A82] text-slate-400 border border-slate-200 hover:border-[#B51A82]/30 rounded-xl transition-all cursor-pointer shadow-xs"
             title="Limpiar todos los registros"
           >
             <Trash2 className="w-4 h-4" />
@@ -444,9 +444,9 @@ export default function ScanHistory({ records, onClearRecords, onResetToDefault 
       </div>
 
       {/* Database control details status line */}
-      <div className="bg-slate-950 px-4 py-3 rounded-2xl border border-slate-800 flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3 text-xs">
-        <div className="flex items-center gap-2 text-slate-400">
-          <span className="font-mono bg-teal-400/10 text-teal-400 px-2 py-0.5 rounded text-[11px] font-bold">
+      <div className="bg-slate-50 px-4 py-3 rounded-2xl border border-slate-200 flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3 text-xs">
+        <div className="flex items-center gap-2 text-slate-700 font-semibold">
+          <span className="font-mono bg-[#00A089]/10 text-[#00A089] px-2 py-0.5 rounded text-[11px] font-bold">
             {records.length}
           </span>
           <span>Transacciones procesadas en este turno corporativo.</span>
@@ -456,13 +456,13 @@ export default function ScanHistory({ records, onClearRecords, onResetToDefault 
           <button
             type="button"
             onClick={onResetToDefault}
-            className="text-[11px] text-teal-400 hover:text-teal-300 font-medium underline transition-all cursor-pointer text-left"
+            className="text-[11px] text-[#00A089] hover:text-[#00A089]/90 font-bold underline transition-all cursor-pointer text-left"
           >
             Cargar datos de prueba de hoy
           </button>
         ) : (
-          <div className="text-slate-500 flex items-center gap-1.5 text-[11px]">
-            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+          <div className="text-slate-500 flex items-center gap-1.5 text-[11px] font-semibold">
+            <span className="w-1.5 h-1.5 rounded-full bg-[#00A089]"></span>
             Prevención de doble ración activa
           </div>
         )}
@@ -473,10 +473,10 @@ export default function ScanHistory({ records, onClearRecords, onResetToDefault 
         
         {/* Search Input bar */}
         <div className="md:col-span-5 relative">
-          <Search className="w-4 h-4 text-slate-500 absolute left-3 top-3" />
+          <Search className="w-4 h-4 text-slate-450 absolute left-3 top-3.5" />
           <input
             type="text"
-            className="w-full bg-slate-950 border border-slate-800 pl-9 pr-4 py-2.5 rounded-xl text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-indigo-400 transition-colors"
+            className="w-full bg-white border border-slate-200 pl-9 pr-4 py-2.5 rounded-xl text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:border-[#342D86] transition-colors font-semibold"
             placeholder="Buscar por DNI, Nombre, Rol o Servicio..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
@@ -487,7 +487,7 @@ export default function ScanHistory({ records, onClearRecords, onResetToDefault 
         <div className="md:col-span-3 flex items-center gap-1.5 text-xs">
           <Filter className="w-3.5 h-3.5 text-slate-500" />
           <select
-            className="bg-slate-950 border border-slate-800 rounded-xl px-2 py-2.5 text-xs text-slate-300 focus:outline-none cursor-pointer flex-1"
+            className="bg-white border border-slate-200 rounded-xl px-2 py-2.5 text-xs text-slate-700 focus:outline-none cursor-pointer flex-1 font-bold"
             value={selectedMealFilter}
             onChange={(e) => setSelectedMealFilter(e.target.value)}
           >
@@ -501,7 +501,7 @@ export default function ScanHistory({ records, onClearRecords, onResetToDefault 
         {/* Status code dropdown */}
         <div className="md:col-span-4 flex items-center gap-1.5 text-xs">
           <select
-            className="bg-slate-950 border border-slate-800 rounded-xl px-2 py-2.5 text-xs text-slate-300 focus:outline-none cursor-pointer flex-1"
+            className="bg-white border border-slate-200 rounded-xl px-2 py-2.5 text-xs text-slate-700 focus:outline-none cursor-pointer flex-1 font-bold"
             value={selectedStatusFilter}
             onChange={(e) => setSelectedStatusFilter(e.target.value)}
           >
@@ -516,24 +516,24 @@ export default function ScanHistory({ records, onClearRecords, onResetToDefault 
       </div>
 
       {/* Table Records Body */}
-      <div className="bg-slate-950 rounded-2xl border border-slate-800 overflow-hidden">
+      <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-xs">
         <div className="overflow-x-auto">
           <table className="w-full text-left font-sans border-collapse">
             <thead>
-              <tr className="border-b border-slate-800/80 text-slate-400 text-[10px] uppercase font-semibold select-none">
-                <th className="py-3 px-4">Trabajador Hospitalario</th>
-                <th className="py-3 px-4">DNI</th>
-                <th className="py-3 px-2">Servicio / Rol</th>
-                <th className="py-3 px-2 text-center">Horario</th>
-                <th className="py-3 px-2">Hora Escaneo</th>
-                <th className="py-3 px-4 text-center">Estado Validación</th>
-                <th className="py-3 px-4 text-right">Aporte Kcal</th>
+              <tr className="border-b border-slate-100 bg-slate-50 text-slate-500 text-[10px] uppercase font-black tracking-wider select-none">
+                <th className="py-3 px-4 text-[#342D86]">Trabajador Hospitalario</th>
+                <th className="py-3 px-4 text-[#342D86]">DNI</th>
+                <th className="py-3 px-2 text-[#342D86]">Servicio / Rol</th>
+                <th className="py-3 px-2 text-center text-[#342D86]">Horario</th>
+                <th className="py-3 px-2 text-[#342D86]">Hora Escaneo</th>
+                <th className="py-3 px-4 text-center text-[#342D86]">Estado Validación</th>
+                <th className="py-3 px-4 text-right text-[#342D86]">Aporte Kcal</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-900 text-xs">
+            <tbody className="divide-y divide-slate-100 text-xs text-slate-700">
               {filteredRecords.length === 0 ? (
                 <tr>
-                  <td colSpan={7} className="py-12 text-center text-slate-600 font-mono">
+                  <td colSpan={7} className="py-12 text-center text-slate-500 font-bold font-sans">
                     Ninguna lectura coincide con los filtros aplicados.
                   </td>
                 </tr>
@@ -543,48 +543,48 @@ export default function ScanHistory({ records, onClearRecords, onResetToDefault 
                   return (
                     <tr 
                       key={record.id} 
-                      className={`hover:bg-slate-900/50 transition-colors ${
-                        record.status === 'DUPLICATE' ? 'bg-red-500/[0.01]' : ''
+                      className={`hover:bg-slate-50/50 transition-colors ${
+                        record.status === 'DUPLICATE' ? 'bg-[#B51A82]/5' : ''
                       }`}
                     >
                       {/* Worker info */}
                       <td className="py-3 px-4 font-sans">
-                        <div className="font-semibold text-slate-200">
+                        <div className="font-extrabold text-[#342D86] text-sm">
                           {record.lastNames}, {record.names}
                         </div>
                         {record.authByAdmin && (
-                          <div className="text-[9px] text-amber-400 font-medium mt-0.5 inline-flex items-center gap-0.5">
+                          <div className="text-[9px] text-[#F9B719] font-black mt-0.5 inline-flex items-center gap-0.5">
                             ⚙️ Excepción autorizada por admin
                           </div>
                         )}
                       </td>
                       
                       {/* DNI */}
-                      <td className="py-3 px-4 font-mono text-slate-400">
+                      <td className="py-3 px-4 font-mono text-slate-600 font-bold">
                         {record.dni}
                       </td>
 
                       {/* Service / Job */}
-                      <td className="py-3 px-2 text-slate-400">
-                        <div className="font-semibold text-[11px] text-teal-400 select-all">{record.service}</div>
-                        <div className="text-[10px] text-slate-500">{record.role}</div>
+                      <td className="py-3 px-2">
+                        <div className="font-black text-[11px] text-[#00A089] select-all">{record.service}</div>
+                        <div className="text-[10px] text-slate-500 font-semibold">{record.role}</div>
                       </td>
 
                       {/* Meal Schedule Range */}
-                      <td className="py-3 px-2 text-center select-none font-semibold">
-                        <span className={`text-[10px] px-2 py-0.5 rounded-full ${
-                          record.mealType === 'DESAYUNO' ? 'bg-amber-500/20 text-amber-200 border border-amber-500/10' :
-                          record.mealType === 'ALMUERZO' ? 'bg-indigo-500/20 text-indigo-200 border border-indigo-500/10' :
-                          'bg-purple-500/20 text-purple-200 border border-purple-500/10'
+                      <td className="py-3 px-2 text-center select-none font-bold">
+                        <span className={`text-[10px] px-2.5 py-0.5 rounded-full font-black ${
+                          record.mealType === 'DESAYUNO' ? 'bg-[#F9B719]/12 text-[#342D86] border border-[#F9B719]/20' :
+                          record.mealType === 'ALMUERZO' ? 'bg-[#00A089]/12 text-[#00A089] border border-[#00A089]/20' :
+                          'bg-[#582A85]/12 text-[#582A85] border border-[#582A85]/20'
                         }`}>
                           {record.mealType}
                         </span>
                       </td>
 
                       {/* Scan trigger timestamp */}
-                      <td className="py-3 px-2 font-mono text-slate-300">
+                      <td className="py-3 px-2 font-mono text-slate-700 font-semibold">
                         {record.scanTime}
-                        <div className="text-[9px] text-slate-500">{record.scanDate}</div>
+                        <div className="text-[9px] text-slate-400 font-sans">{record.scanDate}</div>
                       </td>
 
                       {/* Status Check badge */}
@@ -593,7 +593,7 @@ export default function ScanHistory({ records, onClearRecords, onResetToDefault 
                       </td>
 
                       {/* Calorie value */}
-                      <td className={`py-3 px-4 text-right font-mono font-semibold ${isSuccess ? 'text-teal-400' : 'text-slate-600'}`}>
+                      <td className={`py-3 px-4 text-right font-mono font-black ${isSuccess ? 'text-[#00A089]' : 'text-slate-400'}`}>
                         {isSuccess ? `+${record.calories} Kcal` : '0 Kcal'}
                       </td>
                     </tr>

@@ -1,6 +1,6 @@
 {
-  "name": "Control de Tickets de Alimentación",
-  "description": "Sistema de escaneo de tickets de alimentación hospitalaria con control de duplicados, métricas nutricionales e historial de consumo para personal médico.",
+  "name": "Control de Gestión Alimentaria",
+  "description": "Sistema de gestión y control alimentario hospitalario con control de duplicados, métricas nutricionales e historial de lectura para el Instituto Nacional de Salud del Niño.",
   "requestFramePermissions": [
     "camera"
   ],

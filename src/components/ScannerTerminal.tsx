@@ -67,12 +67,12 @@ export default function ScannerTerminal({
       
       lastKeyTimeRef.current = currentTime;
 
-      // Filter digit keys
-      if (/^[0-9]$/.test(e.key)) {
+      // Filter alphanumeric keys
+      if (/^[0-9a-zA-Z]$/.test(e.key)) {
         bufferRef.current += e.key;
       } else if (e.key === 'Enter') {
         const potentialDni = bufferRef.current.trim();
-        if (potentialDni.length >= 7 && potentialDni.length <= 10) {
+        if (potentialDni.length >= 4 && potentialDni.length <= 15) {
           e.preventDefault();
           onScanResult(potentialDni);
           setScannerLog(prev => [`[PISTOLA SEÑAL] Código leído: ${potentialDni}`, ...prev.slice(0, 4)]);
@@ -134,41 +134,41 @@ export default function ScannerTerminal({
     switch (status) {
       case 'VALID_COMPLETED':
         return {
-          icon: <CheckCircle2 className="w-12 h-12 text-emerald-400" />,
-          bgColor: 'bg-emerald-500/10 border-emerald-500/30',
-          textColor: 'text-emerald-400',
+          icon: <CheckCircle2 className="w-12 h-12 text-[#00A089]" />,
+          bgColor: 'bg-[#00A089]/8 border border-[#00A089]/20',
+          textColor: 'text-[#00A089]',
           title: 'ACCESO AUTORIZADO',
           badgeText: 'Ticket Válido',
         };
       case 'DUPLICATE':
         return {
-          icon: <XCircle className="w-12 h-12 text-red-500 animate-pulse" />,
-          bgColor: 'bg-red-500/10 border-red-500/30',
-          textColor: 'text-red-500',
+          icon: <XCircle className="w-12 h-12 text-[#B51A82] animate-pulse" />,
+          bgColor: 'bg-[#B51A82]/8 border border-[#B51A82]/20',
+          textColor: 'text-[#B51A82]',
           title: 'ACCESO RECHAZADO - DUPLICADO',
           badgeText: 'Ticket Usado',
         };
       case 'OUT_OF_SCHEDULE':
         return {
-          icon: <AlertTriangle className="w-12 h-12 text-amber-400" />,
-          bgColor: 'bg-amber-500/10 border-amber-500/30',
-          textColor: 'text-amber-400',
+          icon: <AlertTriangle className="w-12 h-12 text-[#F9B719]" />,
+          bgColor: 'bg-[#F9B719]/8 border border-[#F9B719]/20',
+          textColor: 'text-[#F9B719]',
           title: 'ADVERTENCIA - FUERA DE HORARIO',
           badgeText: 'Fuera de Horario',
         };
       case 'INVALID_CODE':
         return {
-          icon: <ShieldAlert className="w-12 h-12 text-rose-500" />,
-          bgColor: 'bg-rose-500/10 border-rose-500/30',
-          textColor: 'text-rose-500',
+          icon: <ShieldAlert className="w-12 h-12 text-[#B51A82]" />,
+          bgColor: 'bg-[#B51A82]/8 border border-[#B51A82]/20',
+          textColor: 'text-[#B51A82]',
           title: 'CÓDIGO NO REGISTRADO',
           badgeText: 'No Existe DNI',
         };
       case 'SUSPENDED_WORKER':
         return {
-          icon: <XCircle className="w-12 h-12 text-slate-400" />,
-          bgColor: 'bg-slate-700/10 border-slate-500/30',
-          textColor: 'text-slate-400',
+          icon: <XCircle className="w-12 h-12 text-[#582A85]" />,
+          bgColor: 'bg-[#582A85]/8 border border-[#582A85]/20',
+          textColor: 'text-[#582A85]',
           title: 'TRABAJADOR EXCLUIDO / SUSPENDIDO',
           badgeText: 'Bloqueado Administrativo',
         };
@@ -180,33 +180,33 @@ export default function ScannerTerminal({
   return (
     <div className="space-y-6" id="scanner-terminal">
       {/* 1. Interactive Scanning Station */}
-      <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 shadow-xl overflow-hidden relative">
-        <div className="absolute top-0 left-0 w-32 h-32 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none"></div>
+      <div className="bg-white border border-slate-200 rounded-3xl p-6 shadow-md overflow-hidden relative">
+        <div className="absolute top-0 left-0 w-32 h-32 bg-[#342D86]/5 rounded-full blur-3xl pointer-events-none"></div>
         
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-800 pb-5 mb-5">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-100 pb-5 mb-5">
           <div className="flex items-center gap-3">
-            <div className="p-2.5 rounded-2xl bg-teal-500/10 text-teal-400">
+            <div className="p-2.5 rounded-2xl bg-[#342D86]/10 text-[#342D86]">
               <Scan className="w-6 h-6 animate-pulse" id="scan-terminal-icon" />
             </div>
             <div>
-              <h2 className="font-sans font-bold text-xl text-slate-100 uppercase tracking-wide">Puesto de Escaneo</h2>
-              <p className="text-xs text-slate-400">Estación activa para lectora de barra o ingreso manual</p>
+              <h2 className="font-sans font-bold text-xl text-[#342D86] uppercase tracking-wide">Puesto de Escaneo</h2>
+              <p className="text-xs text-slate-500">Estación activa para lectora de barra o ingreso manual</p>
             </div>
           </div>
           
           {/* Active Meal Schedule Badge Header */}
           {activeMeal ? (
-            <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-indigo-500/10 border border-indigo-500/20 text-indigo-300">
-              <Clock className="w-4 h-4" />
-              <span className="text-xs font-semibold uppercase">{activeMeal.label}</span>
-              <span className="text-[10px] bg-indigo-500/20 px-1.5 py-0.5 rounded-full font-mono text-indigo-200">
+            <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-[#342D86]/8 border border-[#342D86]/15 text-[#342D86]">
+              <Clock className="w-4 h-4 text-[#342D86]" />
+              <span className="text-xs font-bold uppercase">{activeMeal.label}</span>
+              <span className="text-[10px] bg-[#342D86]/15 px-1.5 py-0.5 rounded-full font-mono font-bold">
                 {activeMeal.startTime} - {activeMeal.endTime}
               </span>
             </div>
           ) : (
-            <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-amber-500/10 border border-amber-500/20 text-amber-400">
-              <Clock className="w-4 h-4" />
-              <span className="text-xs font-semibold uppercase font-mono">Sin Turno de Alimento Activo</span>
+            <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-[#F9B719]/10 border border-[#F9B719]/35 text-[#B51A82] font-semibold">
+              <Clock className="w-4 h-4 text-[#F9B719]" />
+              <span className="text-xs font-bold uppercase font-sans">Sin Turno de Alimento Activo</span>
             </div>
           )}
         </div>
@@ -215,11 +215,11 @@ export default function ScannerTerminal({
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
           
           {/* Virtual Camera Viewfinder Screen (7 cols) */}
-          <div className="lg:col-span-7 flex flex-col justify-between aspect-video rounded-2xl bg-slate-950 border border-slate-800 relative overflow-hidden group">
+          <div className="lg:col-span-7 flex flex-col justify-between aspect-video rounded-2xl bg-slate-50 border border-slate-200 relative overflow-hidden group">
             {cameraActive ? (
               <>
                 {/* Simulated Camera Feed */}
-                <div className="absolute inset-0 bg-[radial-gradient(#1e293b_1px,transparent_1px)] [background-size:16px_16px] opacity-25"></div>
+                <div className="absolute inset-0 bg-[radial-gradient(#cbd5e1_1px,transparent_1px)] [background-size:16px_16px] opacity-40"></div>
                 
                 {/* Laser Sweep Beam Animation */}
                 <motion.div 
@@ -229,37 +229,37 @@ export default function ScannerTerminal({
                 />
 
                 {/* Viewfinder brackets */}
-                <div className="absolute top-4 left-4 w-6 h-6 border-t-2 border-l-2 border-teal-400 rounded-tl"></div>
-                <div className="absolute top-4 right-4 w-6 h-6 border-t-2 border-r-2 border-teal-400 rounded-tr"></div>
-                <div className="absolute bottom-4 left-4 w-6 h-6 border-b-2 border-l-2 border-teal-400 rounded-bl"></div>
-                <div className="absolute bottom-4 right-4 w-6 h-6 border-b-2 border-r-2 border-teal-400 rounded-br"></div>
+                <div className="absolute top-4 left-4 w-6 h-6 border-t-2 border-l-2 border-[#342D86] rounded-tl"></div>
+                <div className="absolute top-4 right-4 w-6 h-6 border-t-2 border-r-2 border-[#342D86] rounded-tr"></div>
+                <div className="absolute bottom-4 left-4 w-6 h-6 border-b-2 border-l-2 border-[#342D86] rounded-bl"></div>
+                <div className="absolute bottom-4 right-4 w-6 h-6 border-b-2 border-r-2 border-[#342D86] rounded-br"></div>
 
                 {/* Scanning Center Guidelines */}
                 <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-0">
                   <div className="w-1/2 h-1/4 border border-dashed border-red-500/40 rounded flex items-center justify-center">
-                    <span className="text-[10px] text-red-500/40 font-mono tracking-widest uppercase">Alinear Código</span>
+                    <span className="text-[10px] text-red-500/45 font-mono tracking-widest uppercase font-bold">Alinear Código</span>
                   </div>
                 </div>
 
                 {/* Live Banner */}
-                <div className="absolute top-4 left-1/2 -translate-x-1/2 bg-red-600/90 backdrop-blur-sm shadow px-3 py-1 rounded-full flex items-center gap-1.5 text-white text-[10px] font-bold tracking-wider uppercase">
-                  <div className="w-2 h-2 bg-white rounded-full animate-ping"></div>
+                <div className="absolute top-4 left-1/2 -translate-x-1/2 bg-red-500/5 backdrop-blur-xs border border-red-500/15 px-3 py-10 rounded-full flex items-center gap-1.5 text-red-500/45 text-[10px] font-bold tracking-wider uppercase select-none" style={{ padding: '6px 12px' }}>
+                  <div className="w-1.5 h-1.5 bg-red-500/45 rounded-full animate-ping"></div>
                   Simulador de Cámara Listo
                 </div>
 
                 {/* Info Overlay */}
-                <div className="absolute bottom-3 left-4 right-4 flex items-center justify-between text-[11px] text-slate-400 bg-slate-950/80 backdrop-blur-sm p-2 rounded-lg border border-slate-800/40">
-                  <span className="flex items-center gap-1 text-teal-400 font-mono">
-                    <CheckCircle2 className="w-3.5 h-3.5" />
+                <div className="absolute bottom-3 left-4 right-4 flex items-center justify-between text-[11px] text-slate-650 bg-white/95 backdrop-blur-sm p-2 rounded-lg border border-slate-200 shadow-sm">
+                  <span className="flex items-center gap-1 text-[#00A089] font-bold font-mono">
+                    <CheckCircle2 className="w-3.5 h-3.5 text-[#00A089]" />
                     Pistola USB Detectada
                   </span>
-                  <span>Enfoque automático: ON</span>
+                  <span className="font-medium text-slate-500">Enfoque automático: ON</span>
                 </div>
               </>
             ) : (
-              <div className="absolute inset-0 flex flex-col items-center justify-center text-slate-500 p-6 text-center">
-                <Camera className="w-12 h-12 mb-2 text-slate-600" />
-                <p className="text-sm font-semibold">Simulador de cámara en pausa</p>
+              <div className="absolute inset-0 flex flex-col items-center justify-center text-slate-550 p-6 text-center">
+                <Camera className="w-12 h-12 mb-2 text-slate-400" />
+                <p className="text-sm font-bold text-[#342D86]">Simulador de cámara en pausa</p>
                 <p className="text-xs text-slate-500 max-w-xs mt-1">
                   La cámara ha sido desactiva. Aún puedes usar la pistola de barras o la consola de escritura.
                 </p>
@@ -271,10 +271,10 @@ export default function ScannerTerminal({
           <div className="lg:col-span-5 flex flex-col justify-between space-y-4">
             
             {/* Manual Form entry */}
-            <div className="bg-slate-950 p-4 rounded-2xl border border-slate-800 space-y-3">
-              <label className="text-xs uppercase font-sans font-bold text-slate-300 tracking-wider flex items-center gap-1.5">
-                <Keyboard className="w-4 h-4 text-teal-400" />
-                Ingreso manual o escáner
+            <div className="bg-slate-50 p-4 rounded-2xl border border-slate-200 shadow-sm space-y-3">
+              <label className="text-xs uppercase font-sans font-black text-[#342D86] tracking-wider flex items-center gap-1.5">
+                <Keyboard className="w-4 h-4 text-[#342D86]" />
+                INGRESO MANUAL EXCEPCIONAL
               </label>
               
               <form onSubmit={handleManualSubmit} className="flex gap-2">
@@ -282,18 +282,18 @@ export default function ScannerTerminal({
                   <input
                     ref={inputRef}
                     type="text"
-                    maxLength={10}
+                    maxLength={15}
                     value={manualDni}
-                    onChange={(e) => setManualDni(e.target.value.replace(/[^0-9]/g, ''))}
-                    placeholder="Escribe DNI o emula pistola..."
-                    className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-sm text-slate-200 placeholder-slate-500 focus:outline-none focus:border-teal-400 transition-colors font-mono"
+                    onChange={(e) => setManualDni(e.target.value.replace(/[^a-zA-Z0-9]/g, ''))}
+                    placeholder="Escribe DNI o código de barras..."
+                    className="w-full bg-white border border-slate-300 rounded-xl px-3 py-2 text-sm text-slate-800 placeholder-slate-400 focus:outline-none focus:border-[#342D86] transition-colors font-mono"
                     id="barcode-manual-input"
                   />
                   {manualDni && (
                     <button 
                       type="button" 
                       onClick={() => setManualDni('')}
-                      className="absolute right-2.5 top-2 text-xs text-slate-500 hover:text-slate-300"
+                      className="absolute right-2.5 top-2.5 text-xs text-slate-400 hover:text-slate-600 font-bold"
                     >
                       Limpiar
                     </button>
@@ -301,7 +301,7 @@ export default function ScannerTerminal({
                 </div>
                 <button
                   type="submit"
-                  className="bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold px-4 rounded-xl transition-colors border border-slate-700 cursor-pointer"
+                  className="bg-[#342D86] hover:bg-[#342D86]/90 text-white text-xs font-bold px-4 rounded-xl transition-colors cursor-pointer"
                   id="btn-scan-manual-submit"
                 >
                   Procesar
@@ -309,7 +309,7 @@ export default function ScannerTerminal({
               </form>
 
               <div className="text-[10px] text-slate-500 leading-relaxed font-mono">
-                💡 <span className="font-semibold text-slate-400">LECTOR FÍSICO AUTOMÁTICO ACTIVO:</span> Apunta tu pistola de tickets a la pantalla y presiona el gatillo. La lectura se realiza de forma global en segundo plano.
+                💡 <span className="font-bold text-slate-600">LECTOR FÍSICO AUTOMÁTICO ACTIVO:</span> Apunta tu pistola de tickets a la pantalla y presiona el gatillo. La lectura se realiza de forma global en segundo plano.
               </div>
             </div>
 
@@ -319,29 +319,29 @@ export default function ScannerTerminal({
                 <button
                   type="button"
                   onClick={addRandomScanLog}
-                  className="flex-1 bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 rounded-xl py-2 px-3 text-xs font-semibold text-center transition-all cursor-pointer flex items-center justify-center gap-1"
+                  className="flex-1 bg-white hover:bg-slate-50 text-[#342D86] border border-slate-250 rounded-xl py-2 px-3 text-xs font-bold text-center transition-all cursor-pointer flex items-center justify-center gap-1.5 shadow-xs"
                 >
-                  <RefreshCw className="w-3.5 h-3.5" />
+                  <RefreshCw className="w-3.5 h-3.5 text-[#342D86]" />
                   Escanear Profesional Azar
                 </button>
 
                 <button
                   type="button"
                   onClick={() => setCameraActive(!cameraActive)}
-                  className="bg-slate-800 hover:bg-slate-700 text-slate-450 border border-slate-700 hover:text-slate-200 rounded-xl px-3.5 text-xs transition-colors cursor-pointer flex items-center justify-center"
+                  className="bg-white hover:bg-slate-50 text-slate-650 border border-slate-200 rounded-xl px-3.5 text-xs transition-colors cursor-pointer flex items-center justify-center shadow-xs"
                   title="Pausar/Activar Cámara"
                 >
-                  <Camera className="w-4 h-4" />
+                  <Camera className="w-4 h-4 text-slate-500" />
                 </button>
               </div>
             </div>
 
             {/* Micro logs list */}
-            <div className="bg-slate-950 p-3 rounded-xl border border-slate-800/60 flex-1 min-h-[100px] flex flex-col justify-between">
-              <div className="text-[9px] text-slate-500 font-bold uppercase tracking-wider mb-1">Terminal Logs:</div>
-              <div className="space-y-1 overflow-y-auto max-h-[85px] text-[10px] font-mono text-indigo-300 custom-scrollbar flex-1">
+            <div className="bg-[#1e1e38]/95 p-3 rounded-xl border border-slate-300 shadow-sm flex-grow min-h-[90px] flex flex-col justify-between">
+              <div className="text-[9px] text-[#F9B719] font-black uppercase tracking-wider mb-1">Terminal Logs:</div>
+              <div className="space-y-1 overflow-y-auto max-h-[85px] text-[10px] font-mono text-slate-100 custom-scrollbar flex-grow">
                 {scannerLog.map((log, index) => (
-                  <div key={index} className="truncate select-none opacity-80">
+                  <div key={index} className="truncate select-none opacity-85">
                     &gt; {log}
                   </div>
                 ))}
@@ -360,25 +360,25 @@ export default function ScannerTerminal({
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -15 }}
             transition={{ duration: 0.25 }}
-            className="bg-slate-900 border border-slate-800 rounded-3xl p-6 shadow-2xl relative"
+            className="bg-white border border-slate-200 rounded-3xl p-6 shadow-xl relative"
             id="scan-result-card"
           >
             {/* Colored ambient flash */}
-            <div className={`absolute inset-0 opacity-[0.03] rounded-3xl pointer-events-none transition-colors duration-300 ${
-              lastScanStatus === 'VALID_COMPLETED' ? 'bg-emerald-500' : 
-              lastScanStatus === 'DUPLICATE' ? 'bg-red-500' : 'bg-amber-500'
+            <div className={`absolute inset-0 opacity-[0.02] rounded-3xl pointer-events-none transition-colors duration-300 ${
+              lastScanStatus === 'VALID_COMPLETED' ? 'bg-[#00A089]' : 
+              lastScanStatus === 'DUPLICATE' ? 'bg-[#B51A82]' : 'bg-[#F9B719]'
             }`}></div>
 
             {/* Scanned Worker Visual Header */}
-            <div className="flex items-center justify-between gap-4 border-b border-slate-800 pb-4 mb-5">
+            <div className="flex items-center justify-between gap-4 border-b border-slate-100 pb-4 mb-5">
               <div className="flex items-center gap-2">
-                <UserCheck className="w-5 h-5 text-teal-400" />
-                <h3 className="font-sans font-bold text-slate-100 text-lg">Trabajador del INSN</h3>
+                <UserCheck className="w-5 h-5 text-[#342D86]" />
+                <h3 className="font-sans font-black text-[#342D86] text-lg">Trabajador del INSN</h3>
               </div>
               <button
                 type="button"
                 onClick={onClearLastScan}
-                className="text-xs text-slate-400 hover:text-slate-200 px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 transition-colors cursor-pointer"
+                className="text-xs text-slate-650 hover:text-[#342D86] px-3 py-1.5 rounded-lg bg-slate-50 hover:bg-slate-100 transition-colors border border-slate-200 cursor-pointer font-bold shadow-xs"
               >
                 Cerrar pantalla
               </button>
@@ -391,16 +391,16 @@ export default function ScannerTerminal({
               <div className="md:col-span-4 flex flex-col items-center text-center space-y-4">
                 <div className="relative">
                   {/* Status Indicator Frame Rings - scaled for larger photo size */}
-                  <div className={`absolute -inset-2 rounded-full blur-md opacity-50 transition-colors ${
-                    lastScanStatus === 'VALID_COMPLETED' ? 'bg-emerald-500' :
-                    lastScanStatus === 'DUPLICATE' ? 'bg-red-500' : 'bg-amber-500'
+                  <div className={`absolute -inset-2 rounded-full blur-md opacity-40 transition-colors ${
+                    lastScanStatus === 'VALID_COMPLETED' ? 'bg-[#00A089]' :
+                    lastScanStatus === 'DUPLICATE' ? 'bg-[#B51A82]' : 'bg-[#F9B719]'
                   }`}></div>
                   
                   <img
                     src={lastScannedWorker.photoUrl}
                     alt={`${lastScannedWorker.names} ${lastScannedWorker.lastNames}`}
                     referrerPolicy="no-referrer"
-                    className="relative w-40 h-40 md:w-48 md:h-48 object-cover rounded-full border-4 border-slate-700 bg-slate-950 shadow-xl"
+                    className="relative w-40 h-40 md:w-48 md:h-48 object-cover rounded-full border-4 border-white shadow-xl"
                     onError={(e) => {
                       // Fallback clinical profile face SVG if Unsplash random blocks
                       (e.target as HTMLImageElement).src = `https://api.dicebear.com/7.x/adventurer/svg?seed=${lastScannedWorker.names}`;
@@ -408,14 +408,14 @@ export default function ScannerTerminal({
                   />
                   
                   {/* Miniature badge inside image */}
-                  <div className={`absolute bottom-2 right-2 p-2 rounded-full border-2 border-slate-900 ${
-                    lastScannedWorker.status === 'ACTIVE' ? 'bg-emerald-500' : 
-                    lastScannedWorker.status === 'VACATION' ? 'bg-amber-500' : 'bg-red-500'
+                  <div className={`absolute bottom-2 right-2 p-2.5 rounded-full border-2 border-white ${
+                    lastScannedWorker.status === 'ACTIVE' ? 'bg-[#00A089]' : 
+                    lastScannedWorker.status === 'VACATION' ? 'bg-[#F9B719]' : 'bg-[#B51A82]'
                   }`} title={`Estado del Trabajador: ${lastScannedWorker.status}`} />
                 </div>
 
                 <div>
-                  <span className="text-[10px] bg-slate-950 border border-slate-850 px-2.5 py-1 rounded-full text-slate-400 font-mono tracking-wider">
+                  <span className="text-[10px] bg-slate-50 border border-slate-200 px-2.5 py-1 rounded-full text-slate-500 font-mono font-bold tracking-wider">
                     ID: {lastScannedWorker.id.toUpperCase()}
                   </span>
                 </div>
@@ -424,31 +424,31 @@ export default function ScannerTerminal({
               {/* Central Information blocks (adjusted to 5 cols to leave space for wider photo) */}
               <div className="md:col-span-5 space-y-4">
                 <div>
-                  <h4 className="font-sans font-bold text-slate-100 text-2xl truncate">
+                  <h4 className="font-sans font-black text-[#342D86] text-2xl truncate uppercase tracking-tight">
                     {lastScannedWorker.names} {lastScannedWorker.lastNames}
                   </h4>
                   <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mt-1">
-                    <span className="text-sm font-semibold text-teal-400">
+                    <span className="text-sm font-bold text-[#00A089]">
                       {lastScannedWorker.service}
                     </span>
-                    <span className="text-xs text-slate-500">•</span>
-                    <span className="text-xs text-slate-300">
+                    <span className="text-xs text-slate-400">•</span>
+                    <span className="text-xs text-slate-705 font-semibold">
                       {lastScannedWorker.role}
                     </span>
                   </div>
                 </div>
 
-                <div className="grid grid-cols-2 gap-4 bg-slate-950/60 p-4 rounded-2xl border border-slate-800/80 text-xs">
+                <div className="grid grid-cols-2 gap-4 bg-slate-50 p-4 rounded-2xl border border-slate-200 text-xs shadow-xs">
                   <div>
-                    <span className="text-slate-500 block text-[10px] uppercase font-bold tracking-wider">Número de DNI:</span>
-                    <span className="font-mono text-slate-200 mt-0.5 block font-semibold text-md">{lastScannedWorker.dni}</span>
+                    <span className="text-slate-550 block text-[10px] uppercase font-bold tracking-wider">Número de DNI:</span>
+                    <span className="font-mono text-slate-800 mt-0.5 block font-extrabold text-md">{lastScannedWorker.dni}</span>
                   </div>
                   <div>
-                    <span className="text-slate-500 block text-[10px] uppercase font-bold tracking-wider">Condición Laboral:</span>
-                    <span className={`mt-0.5 block font-semibold ${
-                      lastScanStatus === 'INVALID_CODE' ? 'text-rose-400' :
-                      lastScannedWorker.status === 'ACTIVE' ? 'text-emerald-400' :
-                      lastScannedWorker.status === 'VACATION' ? 'text-amber-400' : 'text-rose-400'
+                    <span className="text-slate-550 block text-[10px] uppercase font-bold tracking-wider">Condición Laboral:</span>
+                    <span className={`mt-0.5 block font-bold ${
+                      lastScanStatus === 'INVALID_CODE' ? 'text-[#B51A82]' :
+                      lastScannedWorker.status === 'ACTIVE' ? 'text-[#00A089]' :
+                      lastScannedWorker.status === 'VACATION' ? 'text-[#F9B719]' : 'text-[#B51A82]'
                     }`}>
                       {lastScanStatus === 'INVALID_CODE' ? 'NO REGISTRADO' :
                        lastScannedWorker.status === 'ACTIVE' ? 'ACTIVO (DE TURNO)' :
@@ -458,22 +458,22 @@ export default function ScannerTerminal({
                 </div>
 
                 {/* Status Notice Description */}
-                <div className={`p-4 rounded-xl border flex items-start gap-3 ${getStatusConfig(lastScanStatus).bgColor}`}>
-                  <div className="mt-0.5">
-                    {lastScanStatus === 'VALID_COMPLETED' && <CheckCircle2 className="w-5 h-5 text-emerald-400" />}
-                    {lastScanStatus === 'DUPLICATE' && <XCircle className="w-5 h-5 text-red-500" />}
-                    {lastScanStatus === 'OUT_OF_SCHEDULE' && <AlertTriangle className="w-5 h-5 text-amber-400" />}
-                    {lastScanStatus === 'SUSPENDED_WORKER' && <ShieldAlert className="w-5 h-5 text-slate-400" />}
-                    {lastScanStatus === 'INVALID_CODE' && <InfoIcon className="w-5 h-5 text-rose-500" />}
+                <div className={`p-4 rounded-xl border flex items-start gap-4 ${getStatusConfig(lastScanStatus).bgColor}`}>
+                  <div className="mt-0.5 shrink-0">
+                    {lastScanStatus === 'VALID_COMPLETED' && <CheckCircle2 className="w-5 h-5 text-[#00A089]" />}
+                    {lastScanStatus === 'DUPLICATE' && <XCircle className="w-5 h-5 text-[#B51A82]" />}
+                    {lastScanStatus === 'OUT_OF_SCHEDULE' && <AlertTriangle className="w-5 h-5 text-[#F9B719]" />}
+                    {lastScanStatus === 'SUSPENDED_WORKER' && <ShieldAlert className="w-5 h-5 text-[#582A85]" />}
+                    {lastScanStatus === 'INVALID_CODE' && <InfoIcon className="w-5 h-5 text-[#B51A82]" />}
                   </div>
                   <div>
-                    <div className="font-sans font-bold text-xs text-slate-100 uppercase tracking-wide">
+                    <div className="font-sans font-black text-xs text-[#342D86] uppercase tracking-wide">
                       {getStatusConfig(lastScanStatus).title}
                     </div>
-                    <p className="text-xs text-slate-300 mt-1 leading-relaxed">
+                    <p className="text-xs text-slate-700 font-medium mt-1 leading-relaxed">
                       {lastScanMessage}
                     </p>
-                    <div className="text-[10px] text-slate-400 font-mono mt-1">
+                    <div className="text-[10px] text-slate-500 font-mono mt-1">
                       Hora de registro: {lastScanTime}
                     </div>
                   </div>
@@ -483,12 +483,12 @@ export default function ScannerTerminal({
               {/* Status Action controls (3 cols) */}
               <div className="md:col-span-3 flex flex-col gap-3 justify-center items-stretch h-full">
                 
-                <div className={`text-center py-3 px-4 rounded-2xl border text-xs font-semibold ${
-                  lastScanStatus === 'VALID_COMPLETED' ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-300' :
-                  lastScanStatus === 'DUPLICATE' ? 'bg-red-500/10 border-red-500/20 text-red-400' :
-                  'bg-amber-500/10 border-amber-500/20 text-amber-300'
+                <div className={`text-center py-3 px-4 rounded-2xl border text-xs font-bold ${
+                  lastScanStatus === 'VALID_COMPLETED' ? 'bg-[#00A089]/10 border-[#00A089]/20 text-[#00A089]' :
+                  lastScanStatus === 'DUPLICATE' ? 'bg-[#B51A82]/10 border-[#B51A82]/20 text-[#B51A82]' :
+                  'bg-[#F9B719]/10 border-[#F9B719]/25 text-[#342D86]'
                 }`}>
-                  <div className="text-[9px] uppercase text-slate-400 tracking-widest font-bold mb-1">Estado de Comedor</div>
+                  <div className="text-[9px] uppercase text-slate-650 tracking-widest font-black mb-1">Estado de Comedor</div>
                   {getStatusConfig(lastScanStatus).badgeText}
                 </div>
 
@@ -497,15 +497,15 @@ export default function ScannerTerminal({
                   <motion.div 
                     initial={{ scale: 0.95, opacity: 0 }}
                     animate={{ scale: 1, opacity: 1 }}
-                    className="p-3 bg-slate-950 rounded-2xl border border-slate-800 space-y-2.5 text-center mt-1"
+                    className="p-3 bg-slate-50 rounded-2xl border border-slate-200 space-y-2 text-center mt-1"
                   >
-                    <div className="text-[10px] text-slate-400 leading-normal">
+                    <div className="text-[10px] text-slate-600 font-medium leading-normal">
                       ⚠️ ¿Autorizar manualmente como excepción? (Por ejemplo: doble turno médico o retraso justificado).
                     </div>
                     <button
                       type="button"
                       onClick={() => onScanResult(lastScannedWorker.dni, true)}
-                      className="w-full bg-amber-500 hover:bg-amber-600 text-slate-950 font-sans text-xs font-semibold py-2 px-3 rounded-xl transition-all cursor-pointer flex items-center justify-center gap-1 shadow-lg shadow-amber-500/10"
+                      className="w-full bg-[#F9B719] hover:bg-[#F9B719]/90 text-[#342D86] font-sans text-xs font-black py-2.5 px-3 rounded-xl transition-all cursor-pointer flex items-center justify-center gap-1 shadow-md"
                     >
                       <span>Forzar Autorización</span>
                       <ArrowRight className="w-3.5 h-3.5" />
@@ -514,16 +514,16 @@ export default function ScannerTerminal({
                 )}
                 
                 {lastScanStatus === 'VALID_COMPLETED' && (
-                  <div className="p-3 bg-emerald-500/5 rounded-2xl border border-emerald-500/10 text-center text-[11px] text-slate-400 leading-normal flex items-center gap-1.5 justify-center">
-                    <CheckCircle2 className="w-4 h-4 text-emerald-400 flex-shrink-0" />
+                  <div className="p-3 bg-[#00A089]/5 rounded-2xl border border-[#00A089]/15 text-center text-[11px] text-slate-600 font-semibold leading-normal flex items-center gap-1.5 justify-center">
+                    <CheckCircle2 className="w-4 h-4 text-[#00A089] flex-shrink-0" />
                     Consumo guardado con éxito.
                   </div>
                 )}
 
                 {lastScanStatus === 'DUPLICATE' && (
-                  <div className="p-3 bg-rose-500/5 rounded-2xl border border-rose-500/10 text-center text-[11.5px] text-rose-400 leading-normal flex flex-col gap-1 items-center justify-center">
-                    <span className="font-sans font-bold text-xs uppercase tracking-wider block">🚫 EXCEPCIÓN RECHAZADA</span>
-                    <span>El ticket ya fue consumido hoy. Por política institucional del Instituto Nacional de Salud del Niño, no se admiten excepciones ni raciones múltiples.</span>
+                  <div className="p-3 bg-[#B51A82]/5 rounded-2xl border border-[#B51A82]/15 text-center text-[10.5px] text-[#B51A82] leading-normal flex flex-col gap-1 items-center justify-center">
+                    <span className="font-sans font-black text-xs uppercase tracking-wider block">🚫 EXCEPCIÓN RECHAZADA</span>
+                    <span className="font-semibold text-center">El ticket ya fue consumido hoy. Por política del Instituto Nacional de Salud del Niño, no se admiten raciones múltiples.</span>
                   </div>
                 )}
               </div>

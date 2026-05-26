@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
+import { motion, AnimatePresence } from 'motion/react';
 import { 
   Worker, ScanRecord, MealSchedule, ScanStatus, 
   SystemNotification, MealType 
@@ -14,14 +15,40 @@ import ScannerTerminal from './components/ScannerTerminal';
 import ScanHistory from './components/ScanHistory';
 import NutritionCharts from './components/NutritionCharts';
 import NotificationCenter from './components/NotificationCenter';
+import LoginScreen from './components/LoginScreen';
 
 // Icons
 import { 
   HeartPulse, Clock, Calendar, CheckSquare, Layers, HelpCircle, 
-  Settings, Radio, Lightbulb, Bell, AlertCircle, Info, Star
+  Settings, Radio, Lightbulb, Bell, AlertCircle, Info, Star, LogOut,
+  Activity
 } from 'lucide-react';
 
 export default function App() {
+  // Authentic simulated identity gates
+  const [isLoggedIn, setIsLoggedIn] = useState<boolean>(() => {
+    return localStorage.getItem('insn_food_logged_in') === 'true';
+  });
+  const [loggedUser, setLoggedUser] = useState<string>(() => {
+    return localStorage.getItem('insn_food_logged_user') || 'admin/insn';
+  });
+
+  const [activeTab, setActiveTab] = useState<'scan' | 'metrics' | 'history'>('scan');
+
+  const handleLoginSuccess = (usr: string) => {
+    setIsLoggedIn(true);
+    setLoggedUser(usr);
+    localStorage.setItem('insn_food_logged_in', 'true');
+    localStorage.setItem('insn_food_logged_user', usr);
+  };
+
+  const handleLogout = () => {
+    setIsLoggedIn(false);
+    setLoggedUser('');
+    localStorage.removeItem('insn_food_logged_in');
+    localStorage.removeItem('insn_food_logged_user');
+  };
+
   // 1. Time state management (Device real-time vs Manual simulated time)
   const [useRealTime, setUseRealTime] = useState<boolean>(false);
   const [simulatedDateTime, setSimulatedDateTime] = useState<Date>(() => {
@@ -122,7 +149,7 @@ export default function App() {
     const scanDateStr = formattedShortDateStr;
 
     // Look up employee
-    const worker = HOSPITAL_WORKERS.find(w => w.dni === dni);
+    const worker = HOSPITAL_WORKERS.find(w => w.dni.trim().toUpperCase() === dni.trim().toUpperCase());
 
     if (!worker) {
       // DNI not exist error
@@ -413,6 +440,8 @@ export default function App() {
     let bufferClearTimeout: NodeJS.Timeout | null = null;
 
     const handleGlobalScanKeyDown = (e: KeyboardEvent) => {
+      if (!isLoggedIn) return; // Guard scanner while on login screen
+
       const activeEl = document.activeElement as HTMLElement;
       const isInput = activeEl && (activeEl.tagName === 'INPUT' || activeEl.tagName === 'TEXTAREA' || activeEl.isContentEditable);
 
@@ -477,121 +506,168 @@ export default function App() {
       window.removeEventListener('keydown', handleGlobalScanKeyDown, true);
       if (bufferClearTimeout) clearTimeout(bufferClearTimeout);
     };
-  }, []);
+  }, [isLoggedIn]);
+
+  if (!isLoggedIn) {
+    return <LoginScreen onLoginSuccess={handleLoginSuccess} />;
+  }
 
   return (
-    <div className="min-h-screen bg-[#0a1122] text-slate-100 flex flex-col justify-between selection:bg-teal-500/20 selection:text-teal-300">
+    <div className="min-h-screen bg-[#f1f5f9] text-slate-800 flex flex-col justify-between selection:bg-[#342D86]/10 selection:text-[#342D86]">
       
       {/* 1. App Top Clinical Header */}
-      <header className="border-b border-slate-900 bg-[#0a1122]/90 backdrop-blur-md sticky top-0 z-30 px-4 sm:px-6 py-4 transition-all select-none">
-        <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-stretch md:items-center justify-between gap-4">
+      <header className="border-b border-slate-200 bg-white/95 backdrop-blur-md sticky top-0 z-30 py-2 sm:py-3 transition-all select-none shadow-sm">
+        <div className="max-w-7xl w-full mx-auto px-4 sm:px-6 flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-3 lg:gap-4">
           
           {/* Logo & title brand */}
-          <div className="flex items-center gap-3">
-            <div className="p-3 bg-gradient-to-tr from-teal-500 to-emerald-400 rounded-3xl shadow-lg shadow-teal-500/10 text-slate-950">
-              <HeartPulse className="w-6 h-6 animate-pulse" />
+          <div className="flex items-center gap-3 sm:gap-4">
+            <div className="shrink-0 bg-slate-50 p-1 sm:p-1.5 rounded-xl sm:rounded-2xl border border-slate-100 shadow-xs flex items-center justify-center">
+              <img 
+                src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRn9TfXpX99Vd5zMd625vUQ-gWG8zrTBWad0w&s" 
+                alt="INSN Logo" 
+                className="h-11 sm:h-14 w-auto object-contain transition-all" 
+                referrerPolicy="no-referrer"
+                onError={(e) => {
+                  const target = e.target as HTMLImageElement;
+                  if (target.src !== "https://www.insn.gob.pe/wp-content/uploads/2019/12/logo-insn.png") {
+                    target.src = "https://www.insn.gob.pe/wp-content/uploads/2019/12/logo-insn.png";
+                  } else {
+                    target.style.display = 'none';
+                  }
+                }}
+              />
             </div>
             <div>
-              <div className="flex items-center gap-1.5">
-                <h1 className="font-sans font-black text-slate-100 text-[17px] tracking-tight uppercase leading-none">
-                  CONTROL DE TICKETS
+              <div className="flex items-center gap-2 sm:gap-3 flex-nowrap">
+                <h1 className="font-sans font-black text-[#342D86] text-xs sm:text-base md:text-lg lg:text-base xl:text-xl tracking-tight uppercase leading-none whitespace-nowrap">
+                  CONTROL DE GESTIÓN ALIMENTARIA
                 </h1>
-                <span className="bg-teal-500/10 border border-teal-500/20 text-teal-400 font-mono text-[9px] font-bold px-1.5 py-0.5 rounded uppercase">
-                  v3.5 Live
+                <span className="bg-[#342D86]/8 border border-[#342D86]/20 text-[#342D86] font-sans text-[9px] sm:text-[10px] font-black px-1.5 py-0.5 sm:px-2 sm:py-0.5 rounded-md tracking-wider uppercase shrink-0">
+                  V1.0
                 </span>
               </div>
-              <span className="text-slate-400 text-xs mt-0.5 block leading-none">Instituto Nacional de Salud del Niño de Nutrición y Guardia</span>
+              <div className="text-slate-700 text-[10px] sm:text-xs font-extrabold mt-0.5 sm:mt-1 leading-tight">
+                Instituto Nacional de Salud del Niño
+              </div>
+              <div className="text-slate-500 text-[9px] sm:text-[10px] mt-0.5 leading-none font-medium">
+                Oficina de Estadística e Informática
+              </div>
             </div>
           </div>
 
-          {/* Clock controller state and presets widget (Enlarged and highly readable on Desktop, compact on mobile/tablets) */}
-          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 lg:gap-5 border lg:border-2 border-teal-500/35 bg-[#0e1930] p-3 lg:p-5 rounded-2xl lg:rounded-3xl shadow-xl shadow-teal-500/5">
+          {/* Clock controller state, presets widget & Logout action */}
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 lg:gap-3 justify-center sm:justify-start lg:justify-end">
             
-            {/* Live Clock Display */}
-            <div className="flex items-center gap-1.5 lg:gap-3 px-2 lg:px-4 justify-center">
-              <Clock className="w-4 h-4 lg:w-5.5 lg:h-5.5 text-teal-400 shrink-0" />
-              <div className="text-center font-mono">
-                <span className="text-sm lg:text-lg font-black text-slate-100 block tracking-tight leading-none">
-                  {formattedTime}
-                </span>
-                <span className="text-[8px] lg:text-[10px] text-slate-350 font-sans block leading-none mt-1 lg:mt-2 font-medium">
-                  {currentDateTime.toLocaleDateString('es-PE', { month: 'short', day: '2-digit' })} ({useRealTime ? 'HORA DISPOSITIVO' : 'HORA SIMULADA'})
-                </span>
+            {/* Clock presets box */}
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-1.5 lg:gap-2.5 border border-slate-200 bg-slate-50 p-1 sm:p-1.5 px-2 rounded-xl lg:rounded-2xl shadow-xs">
+              
+              {/* Live Clock Display */}
+              <div className="flex items-center gap-1 px-0.5 justify-center shrink-0">
+                <Clock className="w-3.5 h-3.5 lg:w-4 lg:h-4 text-[#342D86] shrink-0" />
+                <div className="text-center font-mono">
+                  <span className="text-[11px] sm:text-xs lg:text-sm font-black text-slate-850 block tracking-tight leading-none">
+                    {formattedTime}
+                  </span>
+                  <span className="text-[7.5px] lg:text-[8px] text-slate-500 font-sans block leading-none mt-0.5 font-medium whitespace-nowrap">
+                    {currentDateTime.toLocaleDateString('es-PE', { month: 'short', day: '2-digit' })} ({useRealTime ? 'HORA BASE' : 'SIMULADA'})
+                  </span>
+                </div>
               </div>
+
+              {/* Time Source Selector */}
+              <div className="h-px sm:h-3.5 lg:h-7 w-full sm:w-px bg-slate-200 shrink-0"></div>
+
+              <div className="flex flex-col gap-0.5 flex-1 sm:flex-initial">
+                <div className="flex items-center gap-2 lg:gap-3 justify-between">
+                  <span className="text-[8px] lg:text-[9px] text-[#582A85] uppercase tracking-wider font-black font-sans">Simular Escenario Clínico</span>
+                  
+                  {/* Realtime switch checkbox */}
+                  <label className="inline-flex items-center gap-0.5 cursor-pointer text-[8px] lg:text-[9px] text-slate-600 font-extrabold select-none hover:text-[#342D86] transition-colors">
+                    <input
+                      type="checkbox"
+                      checked={useRealTime}
+                      onChange={(e) => setUseRealTime(e.target.checked)}
+                      className="w-2.5 h-2.5 lg:w-3 lg:h-3 rounded border-slate-300 bg-white text-[#342D86] focus:ring-[#342D86] cursor-pointer"
+                    />
+                    <span>Usar Hora Real</span>
+                  </label>
+                </div>
+
+                {/* Time Presets buttons */}
+                <div className="flex flex-wrap gap-0.5">
+                  <button
+                    type="button"
+                    onClick={() => setSimulatedHour(7, 30)}
+                    className={`px-1 py-0.5 rounded text-[8px] lg:text-[9px] font-black transition-all duration-200 cursor-pointer flex items-center gap-0.5 hover:scale-105 active:scale-95 ${
+                      !useRealTime && currentDateTime.getHours() === 7 ? 'bg-[#00A089] text-white font-black shadow-sm border border-[#00A089]' : 'bg-white text-slate-600 hover:bg-slate-50 border border-slate-200'
+                    }`}
+                    title="Establecer las 07:30 AM"
+                  >
+                    🌅 Desayuno
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setSimulatedHour(9, 13)}
+                    className={`px-1 py-0.5 rounded text-[8px] lg:text-[9px] font-black transition-all duration-200 cursor-pointer flex items-center gap-0.5 hover:scale-105 active:scale-95 ${
+                      !useRealTime && currentDateTime.getHours() === 9 ? 'bg-[#F9B719] text-[#342D86] font-black shadow-sm border border-[#F9B719]' : 'bg-white text-slate-600 hover:bg-slate-50 border border-slate-200'
+                    }`}
+                    title="Establecer las 09:13 AM (Fuera de horario Desayuno)"
+                  >
+                    ⏰ Fuera Horas
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setSimulatedHour(13, 15)}
+                    className={`px-1 py-0.5 rounded text-[8px] lg:text-[9px] font-black transition-all duration-200 cursor-pointer flex items-center gap-0.5 hover:scale-105 active:scale-95 ${
+                      !useRealTime && currentDateTime.getHours() === 13 ? 'bg-[#00A089] text-white font-black shadow-sm border border-[#00A089]' : 'bg-white text-slate-600 hover:bg-slate-50 border border-slate-200'
+                    }`}
+                    title="Establecer las 01:15 PM"
+                  >
+                    ☀️ Almuerzo
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setSimulatedHour(16, 45)}
+                    className={`px-1 py-0.5 rounded text-[8px] lg:text-[9px] font-black transition-all duration-200 cursor-pointer flex items-center gap-0.5 hover:scale-105 active:scale-95 ${
+                      !useRealTime && currentDateTime.getHours() === 16 ? 'bg-[#F9B719] text-[#342D86] font-black shadow-sm border border-[#F9B719]' : 'bg-white text-slate-600 hover:bg-slate-50 border border-slate-200'
+                    }`}
+                    title="Establecer las 04:45 PM"
+                  >
+                    ☕ Fuera Horas
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setSimulatedHour(20, 30)}
+                    className={`px-1 py-0.5 rounded text-[8px] lg:text-[9px] font-black transition-all duration-200 cursor-pointer flex items-center gap-0.5 hover:scale-105 active:scale-95 ${
+                      !useRealTime && currentDateTime.getHours() === 20 ? 'bg-[#00A089] text-white font-black shadow-sm border border-[#00A089]' : 'bg-white text-slate-600 hover:bg-slate-50 border border-slate-200'
+                    }`}
+                    title="Establecer las 08:30 PM"
+                  >
+                    🌙 Cena
+                  </button>
+                </div>
+              </div>
+
             </div>
 
-            {/* Time Source Selector */}
-            <div className="h-px sm:h-6 lg:h-12 w-full sm:w-px bg-slate-800"></div>
-
-            <div className="flex flex-col gap-1.5 lg:gap-2.5 flex-1 sm:flex-initial">
-              <div className="flex items-center gap-2 lg:gap-4 justify-between">
-                <span className="text-[10px] lg:text-xs text-teal-400 uppercase tracking-widest font-black font-sans">Simular Escenario Clínico</span>
-                
-                {/* Realtime switch checkbox */}
-                <label className="inline-flex items-center gap-1.5 lg:gap-2 cursor-pointer text-[10px] lg:text-xs text-slate-350 font-bold select-none hover:text-white transition-colors">
-                  <input
-                    type="checkbox"
-                    checked={useRealTime}
-                    onChange={(e) => setUseRealTime(e.target.checked)}
-                    className="w-3.5 h-3.5 lg:w-4 lg:h-4 rounded border-slate-700 bg-slate-950 text-teal-500 focus:ring-teal-500 focus:ring-offset-slate-950 cursor-pointer"
-                  />
-                  <span>Usar Hora Real</span>
-                </label>
+            {/* Session Info badge and Logout */}
+            <div className="flex items-center gap-2 border border-slate-200 bg-[#342D86]/5 hover:bg-[#342D86]/10 p-1 sm:p-1.5 px-2.5 rounded-xl lg:rounded-2xl shadow-xs transition-all duration-200 shrink-0 hover:shadow-xs">
+              <div className="text-right leading-none hidden sm:block">
+                <div className="text-[7px] lg:text-[7.5px] text-slate-500 font-extrabold uppercase tracking-widest">Usuario Activo</div>
+                <div className="text-[10px] lg:text-[11px] font-black text-[#342D86] truncate max-w-[110px] font-sans mt-0.5" title={loggedUser}>
+                  {loggedUser.split('@')[0]}
+                </div>
               </div>
-
-              {/* Time Presets buttons */}
-              <div className="flex flex-wrap gap-1 lg:gap-1.5">
-                <button
-                  type="button"
-                  onClick={() => setSimulatedHour(7, 30)}
-                  className={`px-2 py-1 lg:px-3.5 lg:py-2 rounded-lg lg:rounded-xl text-[10px] sm:text-xs font-extrabold transition-all duration-200 cursor-pointer flex items-center gap-1 hover:scale-105 active:scale-95 ${
-                    !useRealTime && currentDateTime.getHours() === 7 ? 'bg-teal-500 text-slate-950 font-black shadow-lg shadow-teal-500/20 border border-teal-450' : 'bg-slate-800 text-slate-350 hover:bg-slate-700 hover:text-slate-100 border border-slate-700'
-                  }`}
-                  title="Establecer las 07:30 AM"
-                >
-                  🌅 Desayuno
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setSimulatedHour(9, 13)}
-                  className={`px-2 py-1 lg:px-3.5 lg:py-2 rounded-lg lg:rounded-xl text-[10px] sm:text-xs font-extrabold transition-all duration-200 cursor-pointer flex items-center gap-1 hover:scale-105 active:scale-95 ${
-                    !useRealTime && currentDateTime.getHours() === 9 ? 'bg-amber-500 text-slate-950 font-black shadow-lg shadow-amber-500/20 border border-amber-450' : 'bg-slate-800 text-slate-350 hover:bg-slate-700 hover:text-slate-100 border border-slate-700'
-                  }`}
-                  title="Establecer las 09:13 AM (Fuera de horario Desayuno)"
-                >
-                  ⏰ 9:13 AM
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setSimulatedHour(13, 15)}
-                  className={`px-2 py-1 lg:px-3.5 lg:py-2 rounded-lg lg:rounded-xl text-[10px] sm:text-xs font-extrabold transition-all duration-200 cursor-pointer flex items-center gap-1 hover:scale-105 active:scale-95 ${
-                    !useRealTime && currentDateTime.getHours() === 13 ? 'bg-teal-500 text-slate-950 font-black shadow-lg shadow-teal-500/20 border border-teal-450' : 'bg-slate-800 text-slate-350 hover:bg-slate-700 hover:text-slate-100 border border-slate-700'
-                  }`}
-                  title="Establecer las 01:15 PM"
-                >
-                  ☀️ Almuerzo
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setSimulatedHour(16, 45)}
-                  className={`px-2 py-1 lg:px-3.5 lg:py-2 rounded-lg lg:rounded-xl text-[10px] sm:text-xs font-extrabold transition-all duration-200 cursor-pointer flex items-center gap-1 hover:scale-105 active:scale-95 ${
-                    !useRealTime && currentDateTime.getHours() === 16 ? 'bg-amber-500 text-slate-950 font-black shadow-lg shadow-amber-500/20 border border-amber-450' : 'bg-slate-800 text-slate-350 hover:bg-slate-700 hover:text-slate-100 border border-slate-700'
-                  }`}
-                  title="Establecer las 04:45 PM"
-                >
-                  ☕ Fuera Horas
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setSimulatedHour(20, 30)}
-                  className={`px-2 py-1 lg:px-3.5 lg:py-2 rounded-lg lg:rounded-xl text-[10px] sm:text-xs font-extrabold transition-all duration-200 cursor-pointer flex items-center gap-1 hover:scale-105 active:scale-95 ${
-                    !useRealTime && currentDateTime.getHours() === 20 ? 'bg-teal-500 text-slate-950 font-black shadow-lg shadow-teal-500/20 border border-teal-450' : 'bg-slate-800 text-slate-350 hover:bg-slate-700 hover:text-slate-100 border border-slate-700'
-                  }`}
-                  title="Establecer las 08:30 PM"
-                >
-                  🌙 Cena
-                </button>
-              </div>
+              <div className="w-px h-5 bg-slate-300/60 hidden sm:block"></div>
+              <button
+                type="button"
+                onClick={handleLogout}
+                className="bg-white hover:bg-red-50 text-slate-600 hover:text-red-600 border border-slate-200 hover:border-red-200 p-1.5 rounded-lg lg:rounded-xl transition-all hover:scale-105 active:scale-[0.96] cursor-pointer flex items-center justify-center gap-1 text-[9px] font-black uppercase shadow-xs shrink-0"
+                title="Cerrar la sesión de raciones clínicas"
+              >
+                <LogOut className="w-3 h-3 text-red-500" />
+                <span className="text-[8px] tracking-wider text-slate-600">Salir</span>
+              </button>
             </div>
 
           </div>
@@ -602,64 +678,142 @@ export default function App() {
       {/* 2. Main Workspace Layout */}
       <main className="flex-1 max-w-7xl w-full mx-auto p-4 sm:p-6 space-y-6">
         
+        {/* Navigation Tabs Bar */}
+        <div className="flex border-b border-slate-200 bg-white/85 backdrop-blur-md rounded-2xl p-1.5 shadow-sm overflow-x-auto select-none gap-1 sm:gap-2 border border-slate-200/60" id="main-navigation-tabs">
+          <button
+            type="button"
+            onClick={() => setActiveTab('scan')}
+            className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs sm:text-sm font-black transition-all duration-200 cursor-pointer uppercase shrink-0 ${
+              activeTab === 'scan'
+                ? 'bg-[#342D86] text-white shadow-md'
+                : 'text-slate-600 hover:bg-slate-100 hover:text-[#342D86]'
+            }`}
+          >
+            <Radio className={`w-4 h-4 ${activeTab === 'scan' ? 'animate-pulse' : ''}`} />
+            <span>Terminal de Escaneo</span>
+          </button>
 
+          <button
+            type="button"
+            onClick={() => setActiveTab('metrics')}
+            className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs sm:text-sm font-black transition-all duration-200 cursor-pointer uppercase shrink-0 ${
+              activeTab === 'metrics'
+                ? 'bg-[#342D86] text-white shadow-md'
+                : 'text-slate-600 hover:bg-slate-100 hover:text-[#342D86]'
+            }`}
+          >
+            <Activity className="w-4 h-4" />
+            <span>Métricas Nutricionales</span>
+            <span className={`text-[9px] font-black tracking-wider px-2 py-0.5 rounded-full ${
+              activeTab === 'metrics' ? 'bg-white/20 text-white' : 'bg-[#E2F1F0] text-[#00A089]'
+            }`}>
+              {records.filter(r => r.status === 'VALID_COMPLETED' || (r.status === 'OUT_OF_SCHEDULE' && r.authByAdmin)).length} raciones
+            </span>
+          </button>
 
-        {/* Primary responsive grid (Wider main column space for Scanner and Results) */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-          
-          {/* LEFT SIDE COLUMN: Scanner View and Validation Result cards (8 cols - Expanded horizontally) */}
-          <div className="lg:col-span-8 space-y-6">
-            <ScannerTerminal
-              onScanResult={handleScanResult}
-              activeMeal={activeMeal}
-              lastScannedWorker={lastScannedWorker}
-              lastScanStatus={lastScanStatus}
-              lastScanMessage={lastScanMessage}
-              lastScanTime={lastScanTime}
-              onClearLastScan={() => {
-                setLastScannedWorker(null);
-                setLastScanStatus(null);
-                setLastScanMessage(null);
-              }}
-              isSimulatedTimeActive={!useRealTime}
-            />
-
-            {/* Daily stats with custom charts */}
-            <NutritionCharts records={records} />
-          </div>
-
-          {/* RIGHT SIDE COLUMN: Notification alerts (4 cols) */}
-          <div className="lg:col-span-4 space-y-6">
-            
-            {/* Notification flow */}
-            <NotificationCenter
-              notifications={notifications}
-              onMarkRead={handleMarkNotifRead}
-              onClearAll={handleClearNotifications}
-              onAddSimulatedNotif={addNotification}
-            />
-
-          </div>
-
+          <button
+            type="button"
+            onClick={() => setActiveTab('history')}
+            className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs sm:text-sm font-black transition-all duration-200 cursor-pointer uppercase shrink-0 ${
+              activeTab === 'history'
+                ? 'bg-[#342D86] text-white shadow-md'
+                : 'text-slate-600 hover:bg-slate-100 hover:text-[#342D86]'
+            }`}
+          >
+            <Calendar className="w-4 h-4" />
+            <span>Historial y Control Diario</span>
+            {notifications.filter(n => !n.read).length > 0 && (
+              <span className="bg-rose-500 text-white text-[9px] font-black px-1.5 py-0.5 rounded-full h-4 min-w-4 flex items-center justify-center animate-pulse">
+                {notifications.filter(n => !n.read).length}
+              </span>
+            )}
+          </button>
         </div>
 
-        {/* BOTTOM SECTION: Control Log Grid (Full Width) */}
-        <ScanHistory
-          records={records}
-          onClearRecords={handleClearRecords}
-          onResetToDefault={handleResetToDefault}
-        />
+        {/* Dynamic Tab Panes with motion animations */}
+        <div className="relative min-h-[350px]" id="active-tab-container">
+          <AnimatePresence mode="wait">
+            {activeTab === 'scan' && (
+              <motion.div
+                key="scan-tab"
+                initial={{ opacity: 0, y: 15 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -15 }}
+                transition={{ duration: 0.2 }}
+                className="max-w-4xl mx-auto"
+              >
+                <ScannerTerminal
+                  onScanResult={handleScanResult}
+                  activeMeal={activeMeal}
+                  lastScannedWorker={lastScannedWorker}
+                  lastScanStatus={lastScanStatus}
+                  lastScanMessage={lastScanMessage}
+                  lastScanTime={lastScanTime}
+                  onClearLastScan={() => {
+                    setLastScannedWorker(null);
+                    setLastScanStatus(null);
+                    setLastScanMessage(null);
+                  }}
+                  isSimulatedTimeActive={!useRealTime}
+                />
+              </motion.div>
+            )}
+
+            {activeTab === 'metrics' && (
+              <motion.div
+                key="metrics-tab"
+                initial={{ opacity: 0, y: 15 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -15 }}
+                transition={{ duration: 0.2 }}
+                className="max-w-5xl mx-auto"
+              >
+                <NutritionCharts records={records} activeMeal={activeMeal} />
+              </motion.div>
+            )}
+
+            {activeTab === 'history' && (
+              <motion.div
+                key="history-tab"
+                initial={{ opacity: 0, y: 15 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -15 }}
+                transition={{ duration: 0.2 }}
+                className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start"
+              >
+                {/* 8-column wide list log */}
+                <div className="lg:col-span-8">
+                  <ScanHistory
+                    records={records}
+                    onClearRecords={handleClearRecords}
+                    onResetToDefault={handleResetToDefault}
+                  />
+                </div>
+
+                {/* 4-column notification widget logs */}
+                <div className="lg:col-span-4">
+                  <NotificationCenter
+                    notifications={notifications}
+                    onMarkRead={handleMarkNotifRead}
+                    onClearAll={handleClearNotifications}
+                    onAddSimulatedNotif={addNotification}
+                  />
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
 
       </main>
 
       {/* 3. Footer branding */}
-      <footer className="border-t border-slate-900 bg-[#060b17]/90 py-6 text-center text-xs text-slate-500 select-none">
+      <footer className="border-t border-slate-200 bg-white py-6 text-center text-xs text-slate-500 select-none">
         <div className="max-w-7xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-3">
           <p>
             Plataforma Médica de Distribución Alimenticia - Instituto Nacional de Salud del Niño © {new Date().getFullYear()}
           </p>
-          <div className="flex items-center gap-1.5 text-[11px] text-slate-400 bg-slate-900 border border-slate-800 px-3 py-1 rounded-full font-mono">
-            <Radio className="w-3.5 h-3.5 text-emerald-400 animate-pulse" />
+          <div className="flex items-center gap-1.5 text-[11px] text-slate-600 bg-slate-50 border border-slate-200 px-3 py-1.5 rounded-full font-mono">
+            <Radio className="w-3.5 h-3.5 text-[#00A089] animate-pulse" />
             <span>Escáner Conectado en puerto USB</span>
           </div>
         </div>
