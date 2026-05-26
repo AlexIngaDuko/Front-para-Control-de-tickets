@@ -505,7 +505,7 @@ export default function LoginScreen({ onLoginSuccess }: LoginScreenProps) {
             {/* Version Badge & Custom Footer */}
             <div className="mt-6 flex flex-col items-center justify-center gap-2 select-none">
               <span className="bg-[#342D86]/8 text-[#342D86] text-[9.5px] sm:text-[10px] font-mono font-black px-2.5 py-0.5 rounded-full border border-[#342D86]/15 tracking-wider uppercase">
-                VERSIÓN 1.0
+                VERSIÓN 1.0.0
               </span>
               
               <p className="text-[9.5px] sm:text-[10.5px] text-slate-500 hover:text-[#342D86] transition-colors text-center font-bold mt-1.5 max-w-[300px] leading-tight font-sans">

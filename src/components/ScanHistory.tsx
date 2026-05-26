@@ -82,6 +82,13 @@ export default function ScanHistory({ records, onClearRecords, onResetToDefault 
             No Autorizado
           </span>
         );
+      case 'REVOKED':
+        return (
+          <span className="px-2.5 py-1 text-[10px] font-black rounded-lg bg-red-50 text-red-600 border border-red-200 inline-flex items-center gap-1 font-sans">
+            <span className="w-1.5 h-1.5 bg-red-600 rounded-full animate-pulse"></span>
+            Revocado
+          </span>
+        );
     }
   };
 
@@ -510,6 +517,7 @@ export default function ScanHistory({ records, onClearRecords, onResetToDefault 
             <option value="DUPLICATE">Duplicados Bloqueados</option>
             <option value="OUT_OF_SCHEDULE">Fuera de Horario</option>
             <option value="SUSPENDED_WORKER">Excluidos (Vacaciones)</option>
+            <option value="REVOKED">Revocados / Anulados</option>
           </select>
         </div>
 
@@ -544,12 +552,13 @@ export default function ScanHistory({ records, onClearRecords, onResetToDefault 
                     <tr 
                       key={record.id} 
                       className={`hover:bg-slate-50/50 transition-colors ${
-                        record.status === 'DUPLICATE' ? 'bg-[#B51A82]/5' : ''
+                        record.status === 'DUPLICATE' ? 'bg-[#B51A82]/5' : 
+                        record.status === 'REVOKED' ? 'bg-red-50/20 text-slate-450' : ''
                       }`}
                     >
                       {/* Worker info */}
                       <td className="py-3 px-4 font-sans">
-                        <div className="font-extrabold text-[#342D86] text-sm">
+                        <div className={`font-extrabold text-[#342D86] text-sm ${record.status === 'REVOKED' ? 'line-through text-slate-400' : ''}`}>
                           {record.lastNames}, {record.names}
                         </div>
                         {record.authByAdmin && (
@@ -557,10 +566,15 @@ export default function ScanHistory({ records, onClearRecords, onResetToDefault 
                             ⚙️ Excepción autorizada por admin
                           </div>
                         )}
+                        {record.status === 'REVOKED' && (
+                          <div className="text-[9px] text-red-500 font-extrabold mt-0.5 inline-flex items-center gap-0.5">
+                            🚫 Consumo Revocado / Anulado
+                          </div>
+                        )}
                       </td>
                       
                       {/* DNI */}
-                      <td className="py-3 px-4 font-mono text-slate-600 font-bold">
+                      <td className={`py-3 px-4 font-mono text-slate-600 font-bold ${record.status === 'REVOKED' ? 'line-through text-slate-450' : ''}`}>
                         {record.dni}
                       </td>
 

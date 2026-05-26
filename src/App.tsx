@@ -34,6 +34,7 @@ export default function App() {
   });
 
   const [activeTab, setActiveTab] = useState<'scan' | 'metrics' | 'history'>('scan');
+  const [showNotifDropdown, setShowNotifDropdown] = useState(false);
 
   const handleLoginSuccess = (usr: string) => {
     setIsLoggedIn(true);
@@ -427,6 +428,32 @@ export default function App() {
     setNotifications(INITIAL_NOTIFICATIONS);
   };
 
+  const handleRevokeLastScan = () => {
+    setRecords(prev => {
+      if (prev.length === 0) return prev;
+      const updated = [...prev];
+      // Mark the most recent record as 'REVOKED'
+      updated[0] = {
+        ...updated[0],
+        status: 'REVOKED',
+        statusMessage: 'El ticket de ración de alimentos fue revocado por el administrador.',
+        calories: 0,
+        protein: 0,
+        carbs: 0
+      };
+      return updated;
+    });
+
+    setLastScanStatus('REVOKED');
+    setLastScanMessage('El ticket de ración de alimentos fue revocado por el supervisor de la Oficina de Estadística e Informática.');
+    
+    addNotification(
+      '🔴 Consumo Revocado',
+      'Se ha revocado el último consumo registrado del anterior trabajador.',
+      'alert'
+    );
+  };
+
   // Setup dynamic reference to handleScanResult to bypass React stale closures
   const handleScanRef = React.useRef(handleScanResult);
   useEffect(() => {
@@ -543,14 +570,14 @@ export default function App() {
                   CONTROL DE GESTIÓN ALIMENTARIA
                 </h1>
                 <span className="bg-[#342D86]/8 border border-[#342D86]/20 text-[#342D86] font-sans text-[9px] sm:text-[10px] font-black px-1.5 py-0.5 sm:px-2 sm:py-0.5 rounded-md tracking-wider uppercase shrink-0">
-                  V1.0
+                  V1.0.0
                 </span>
               </div>
               <div className="text-slate-700 text-[10px] sm:text-xs font-extrabold mt-0.5 sm:mt-1 leading-tight">
                 Instituto Nacional de Salud del Niño
               </div>
               <div className="text-slate-500 text-[9px] sm:text-[10px] mt-0.5 leading-none font-medium">
-                Oficina de Estadística e Informática
+                Oficina de Estadística e Informática - 2026
               </div>
             </div>
           </div>
@@ -559,7 +586,7 @@ export default function App() {
           <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 lg:gap-3 justify-center sm:justify-start lg:justify-end">
             
             {/* Clock presets box */}
-            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-1.5 lg:gap-2.5 border border-slate-200 bg-slate-50 p-1 sm:p-1.5 px-2 rounded-xl lg:rounded-2xl shadow-xs">
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-1.5 lg:gap-2.5 border border-slate-200 bg-slate-50 p-1 sm:p-1.5 px-2 rounded-xl lg:rounded-2xl shadow-xs relative">
               
               {/* Live Clock Display */}
               <div className="flex items-center gap-1 px-0.5 justify-center shrink-0">
@@ -574,78 +601,142 @@ export default function App() {
                 </div>
               </div>
 
-              {/* Time Source Selector */}
+              {/* Time Source Selector Divider */}
               <div className="h-px sm:h-3.5 lg:h-7 w-full sm:w-px bg-slate-200 shrink-0"></div>
 
-              <div className="flex flex-col gap-0.5 flex-1 sm:flex-initial">
-                <div className="flex items-center gap-2 lg:gap-3 justify-between">
-                  <span className="text-[8px] lg:text-[9px] text-[#582A85] uppercase tracking-wider font-black font-sans">Simular Escenario Clínico</span>
-                  
-                  {/* Realtime switch checkbox */}
-                  <label className="inline-flex items-center gap-0.5 cursor-pointer text-[8px] lg:text-[9px] text-slate-600 font-extrabold select-none hover:text-[#342D86] transition-colors">
-                    <input
-                      type="checkbox"
-                      checked={useRealTime}
-                      onChange={(e) => setUseRealTime(e.target.checked)}
-                      className="w-2.5 h-2.5 lg:w-3 lg:h-3 rounded border-slate-300 bg-white text-[#342D86] focus:ring-[#342D86] cursor-pointer"
-                    />
-                    <span>Usar Hora Real</span>
-                  </label>
-                </div>
+              {/* Notification Bell Button & Dropdown */}
+              <div className="relative flex justify-center py-1 sm:py-0 px-1">
+                <button
+                  type="button"
+                  onClick={() => setShowNotifDropdown(!showNotifDropdown)}
+                  className={`relative p-2 rounded-lg lg:rounded-xl transition-all hover:scale-105 active:scale-[0.96] cursor-pointer flex items-center justify-center gap-1.5 text-[10px] font-black uppercase ${
+                    showNotifDropdown 
+                      ? 'bg-[#342D86] text-white shadow-xs' 
+                      : 'bg-white hover:bg-slate-100 text-[#342D86] border border-slate-200 shadow-xs'
+                  }`}
+                  id="notifications-bell-header-btn"
+                  title="Ver alertas del sistema"
+                >
+                  <Bell className={`w-4 h-4 ${notifications.filter(n => !n.read).length > 0 ? 'animate-bounce' : ''}`} />
+                  <span className="text-[9px] tracking-wider font-extrabold hidden lg:inline">Alertas</span>
+                  {notifications.filter(n => !n.read).length > 0 && (
+                    <span className="absolute -top-1 -right-1 w-4 h-4 bg-rose-500 text-[8px] font-black text-white rounded-full flex items-center justify-center animate-pulse">
+                      {notifications.filter(n => !n.read).length}
+                    </span>
+                  )}
+                </button>
 
-                {/* Time Presets buttons */}
-                <div className="flex flex-wrap gap-0.5">
-                  <button
-                    type="button"
-                    onClick={() => setSimulatedHour(7, 30)}
-                    className={`px-1 py-0.5 rounded text-[8px] lg:text-[9px] font-black transition-all duration-200 cursor-pointer flex items-center gap-0.5 hover:scale-105 active:scale-95 ${
-                      !useRealTime && currentDateTime.getHours() === 7 ? 'bg-[#00A089] text-white font-black shadow-sm border border-[#00A089]' : 'bg-white text-slate-600 hover:bg-slate-50 border border-slate-200'
-                    }`}
-                    title="Establecer las 07:30 AM"
-                  >
-                    🌅 Desayuno
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setSimulatedHour(9, 13)}
-                    className={`px-1 py-0.5 rounded text-[8px] lg:text-[9px] font-black transition-all duration-200 cursor-pointer flex items-center gap-0.5 hover:scale-105 active:scale-95 ${
-                      !useRealTime && currentDateTime.getHours() === 9 ? 'bg-[#F9B719] text-[#342D86] font-black shadow-sm border border-[#F9B719]' : 'bg-white text-slate-600 hover:bg-slate-50 border border-slate-200'
-                    }`}
-                    title="Establecer las 09:13 AM (Fuera de horario Desayuno)"
-                  >
-                    ⏰ Fuera Horas
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setSimulatedHour(13, 15)}
-                    className={`px-1 py-0.5 rounded text-[8px] lg:text-[9px] font-black transition-all duration-200 cursor-pointer flex items-center gap-0.5 hover:scale-105 active:scale-95 ${
-                      !useRealTime && currentDateTime.getHours() === 13 ? 'bg-[#00A089] text-white font-black shadow-sm border border-[#00A089]' : 'bg-white text-slate-600 hover:bg-slate-50 border border-slate-200'
-                    }`}
-                    title="Establecer las 01:15 PM"
-                  >
-                    ☀️ Almuerzo
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setSimulatedHour(16, 45)}
-                    className={`px-1 py-0.5 rounded text-[8px] lg:text-[9px] font-black transition-all duration-200 cursor-pointer flex items-center gap-0.5 hover:scale-105 active:scale-95 ${
-                      !useRealTime && currentDateTime.getHours() === 16 ? 'bg-[#F9B719] text-[#342D86] font-black shadow-sm border border-[#F9B719]' : 'bg-white text-slate-600 hover:bg-slate-50 border border-slate-200'
-                    }`}
-                    title="Establecer las 04:45 PM"
-                  >
-                    ☕ Fuera Horas
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setSimulatedHour(20, 30)}
-                    className={`px-1 py-0.5 rounded text-[8px] lg:text-[9px] font-black transition-all duration-200 cursor-pointer flex items-center gap-0.5 hover:scale-105 active:scale-95 ${
-                      !useRealTime && currentDateTime.getHours() === 20 ? 'bg-[#00A089] text-white font-black shadow-sm border border-[#00A089]' : 'bg-white text-slate-600 hover:bg-slate-50 border border-slate-200'
-                    }`}
-                    title="Establecer las 08:30 PM"
-                  >
-                    🌙 Cena
-                  </button>
-                </div>
+                {/* Notifications Dropdown dropdown popup list */}
+                <AnimatePresence>
+                  {showNotifDropdown && (
+                    <motion.div
+                      initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                      animate={{ opacity: 1, y: 0, scale: 1 }}
+                      exit={{ opacity: 0, y: 10, scale: 0.95 }}
+                      transition={{ duration: 0.15 }}
+                      className="absolute right-0 top-full mt-2 w-72 sm:w-80 bg-white border border-slate-200 rounded-2xl shadow-xl z-50 p-4 block text-left"
+                      style={{ transformOrigin: 'top right' }}
+                    >
+                      {/* Speech bubble pointer arrow */}
+                      <div className="absolute -top-1.5 right-6 w-3 h-3 bg-white border-t border-l border-slate-201 rotate-45 pointer-events-none" />
+
+                      {/* Dropdown Header */}
+                      <div className="flex items-center justify-between border-b border-slate-100 pb-2 mb-2">
+                        <span className="text-[10px] font-black text-[#342D86] uppercase tracking-wider">
+                          Central de Alertas ({notifications.filter(n => !n.read).length} no leídas)
+                        </span>
+                        <div className="flex gap-1.5 items-center">
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              // Mark all read
+                              setNotifications(prev => prev.map(n => ({ ...n, read: true })));
+                            }}
+                            className="text-[8.5px] font-black text-[#00A089] hover:underline uppercase transition-all"
+                          >
+                            Leídas
+                          </button>
+                          <span className="text-slate-300 text-[9px] font-medium font-sans">|</span>
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleClearNotifications();
+                            }}
+                            className="text-[8.5px] font-black text-rose-650 hover:underline uppercase transition-all"
+                          >
+                            Limpiar
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* Dropdown Scroll List */}
+                      <div className="space-y-2 max-h-[220px] overflow-y-auto pr-1 select-none custom-scrollbar text-xs">
+                        {notifications.map((notification) => {
+                          const isSuccess = notification.type === 'success';
+                          const isWarning = notification.type === 'warning';
+                          const isAlert = notification.type === 'alert';
+                          const badgeColor = isSuccess 
+                            ? 'bg-[#00A089]/8 text-[#00A089] border-l-[#00A089]' 
+                            : isWarning 
+                              ? 'bg-[#F9B719]/8 text-[#342D86] border-l-[#F9B719]' 
+                              : isAlert 
+                                ? 'bg-rose-50 text-rose-700 border-l-rose-500' 
+                                : 'bg-slate-50 text-slate-700 border-l-[#342D86]';
+                          
+                          return (
+                            <div
+                              key={notification.id}
+                              onClick={() => handleMarkNotifRead(notification.id)}
+                              className={`p-2.5 rounded-lg border border-slate-100 border-l-3 ${badgeColor} transition-all relative flex flex-col gap-1 cursor-pointer hover:bg-slate-50/50 group text-left`}
+                            >
+                              <div className="flex items-center justify-between gap-2">
+                                <span className="font-sans font-black text-[#342D86] text-[10.5px] leading-tight truncate">
+                                  {notification.title}
+                                </span>
+                                {!notification.read && (
+                                  <span className="w-1.5 h-1.5 bg-rose-500 rounded-full flex-shrink-0 animate-pulse" />
+                                )}
+                              </div>
+                              <p className="text-[10px] text-slate-600 font-medium leading-relaxed font-sans break-words whitespace-normal line-clamp-3">
+                                {notification.message}
+                              </p>
+                              <div className="flex items-center justify-between mt-1 text-[8px] text-slate-500 font-mono font-bold leading-none">
+                                <span>A las {notification.timestamp}</span>
+                                {!notification.read && (
+                                  <span className="text-[7.5px] uppercase font-black text-[#00A089] group-hover:underline">
+                                    Marcar leído
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+                          );
+                        })}
+
+                        {notifications.length === 0 && (
+                          <div className="text-center py-6 text-slate-400 font-bold text-[10px] uppercase leading-relaxed font-sans">
+                            Sin alertas disponibles.
+                          </div>
+                        )}
+                      </div>
+                      
+                      {/* View all button to switch tabs */}
+                      <div className="border-t border-slate-100 pt-2 mt-2 flex justify-center">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setActiveTab('history');
+                            setShowNotifDropdown(false);
+                          }}
+                          className="text-[9.5px] font-black text-[#342D86] hover:text-[#00A089] uppercase tracking-wider font-sans leading-none flex items-center gap-1 cursor-pointer"
+                        >
+                          Ver historial &rarr;
+                        </button>
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
               </div>
 
             </div>
@@ -754,6 +845,7 @@ export default function App() {
                     setLastScanStatus(null);
                     setLastScanMessage(null);
                   }}
+                  onRevokeLastScan={handleRevokeLastScan}
                   isSimulatedTimeActive={!useRealTime}
                 />
               </motion.div>
@@ -779,26 +871,13 @@ export default function App() {
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -15 }}
                 transition={{ duration: 0.2 }}
-                className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start"
+                className="max-w-6xl mx-auto w-full"
               >
-                {/* 8-column wide list log */}
-                <div className="lg:col-span-8">
-                  <ScanHistory
-                    records={records}
-                    onClearRecords={handleClearRecords}
-                    onResetToDefault={handleResetToDefault}
-                  />
-                </div>
-
-                {/* 4-column notification widget logs */}
-                <div className="lg:col-span-4">
-                  <NotificationCenter
-                    notifications={notifications}
-                    onMarkRead={handleMarkNotifRead}
-                    onClearAll={handleClearNotifications}
-                    onAddSimulatedNotif={addNotification}
-                  />
-                </div>
+                <ScanHistory
+                  records={records}
+                  onClearRecords={handleClearRecords}
+                  onResetToDefault={handleResetToDefault}
+                />
               </motion.div>
             )}
           </AnimatePresence>

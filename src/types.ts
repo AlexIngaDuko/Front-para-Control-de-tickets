@@ -5,7 +5,8 @@ export type ScanStatus =
   | 'DUPLICATE' 
   | 'OUT_OF_SCHEDULE' 
   | 'INVALID_CODE' 
-  | 'SUSPENDED_WORKER';
+  | 'SUSPENDED_WORKER'
+  | 'REVOKED';
 
 export interface Worker {
   id: string;
