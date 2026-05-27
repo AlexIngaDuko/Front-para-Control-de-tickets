@@ -47,9 +47,22 @@ export default function ScanHistory({ records, onClearRecords, onResetToDefault 
     return matchesSearch && matchesMeal && matchesStatus;
   });
 
-  const getStatusBadge = (status: ScanStatus) => {
+  const getStatusBadge = (status: ScanStatus, authByAdmin?: boolean) => {
     switch (status) {
       case 'VALID_COMPLETED':
+        if (authByAdmin) {
+          return (
+            <div className="inline-flex flex-col items-center justify-center p-1.5 rounded-lg bg-amber-50 text-amber-600 border border-amber-200 leading-none min-w-[130px] select-none text-center">
+              <span className="flex items-center gap-1 font-black text-[10px] uppercase tracking-wide">
+                <span className="w-1.5 h-1.5 bg-amber-500 rounded-full animate-pulse"></span>
+                Autorizado
+              </span>
+              <span className="text-[8.5px] font-bold text-amber-500/90 lowercase first-letter:uppercase mt-0.5">
+                Excepcionalmente
+              </span>
+            </div>
+          );
+        }
         return (
           <span className="px-2.5 py-1 text-[10px] font-black rounded-lg bg-[#00A089]/8 text-[#00A089] border border-[#00A089]/20 inline-flex items-center gap-1">
             <span className="w-1.5 h-1.5 bg-[#00A089] rounded-full"></span>
@@ -93,10 +106,10 @@ export default function ScanHistory({ records, onClearRecords, onResetToDefault 
   };
 
   // Stats calculation for reporting
-  const validScans = records.filter(r => r.status === 'VALID_COMPLETED' || (r.status === 'OUT_OF_SCHEDULE' && r.authByAdmin));
-  const duplicateAttempts = records.filter(r => r.status === 'DUPLICATE').length;
-  const outOfScheduleCount = records.filter(r => r.status === 'OUT_OF_SCHEDULE').length;
-  const totalCaloriesServed = validScans.reduce((total, r) => total + r.calories, 0);
+  const validScans = filteredRecords.filter(r => r.status === 'VALID_COMPLETED' || (r.status === 'OUT_OF_SCHEDULE' && r.authByAdmin));
+  const regularScansCount = validScans.filter(r => !r.authByAdmin).length;
+  const duplicateAttempts = filteredRecords.filter(r => r.status === 'DUPLICATE').length;
+  const outOfScheduleCount = filteredRecords.filter(r => r.status === 'OUT_OF_SCHEDULE' || r.authByAdmin).length;
 
   // Group scans by service
   const serviceCounts: Record<string, number> = {};
@@ -111,11 +124,10 @@ export default function ScanHistory({ records, onClearRecords, onResetToDefault 
       reportDate: new Date().toISOString().split('T')[0],
       shiftInfo: 'Turno Rotativo Diario de Alimentación',
       summary: {
-        totalProcessedTickets: records.length,
+        totalProcessedTickets: filteredRecords.length,
         peopleSatiated: validScans.length,
-        caloriesDistributed: totalCaloriesServed,
         duplicatesPrevented: duplicateAttempts,
-        outOfScheduleAutorizados: records.filter(r => r.status === 'OUT_OF_SCHEDULE' && r.authByAdmin).length
+        outOfScheduleAutorizados: filteredRecords.filter(r => r.status === 'OUT_OF_SCHEDULE' && r.authByAdmin).length
       },
       consumedWorkers: validScans.map(s => ({
         dni: s.dni,
@@ -124,10 +136,9 @@ export default function ScanHistory({ records, onClearRecords, onResetToDefault 
         cargo: s.role,
         ingesta: s.mealType,
         horaEscaneo: s.scanTime,
-        calorias: s.calories,
         metodo: s.authByAdmin ? 'Autorización Administrador especial' : 'Lector de barra estándar'
       })),
-      failuresEncountered: records.filter(r => r.status !== 'VALID_COMPLETED' && !r.authByAdmin).map(s => ({
+      failuresEncountered: filteredRecords.filter(r => r.status !== 'VALID_COMPLETED' && !r.authByAdmin).map(s => ({
         dni: s.dni,
         nombre: `${s.lastNames}, ${s.names}`,
         error: s.status,
@@ -146,16 +157,15 @@ export default function ScanHistory({ records, onClearRecords, onResetToDefault 
   };
 
   const downloadCSV = () => {
-    const headers = ['DNI', 'Trabajador', 'Servicio', 'Rol', 'Horario', 'Hora de Escaneo', 'Estado', 'Nutrición (Calorías)'];
-    const rows = records.map(r => [
+    const headers = ['DNI', 'Trabajador', 'Servicio', 'Rol', 'Horario', 'Hora de Escaneo', 'Estado'];
+    const rows = filteredRecords.map(r => [
       r.dni,
       `"${r.lastNames}, ${r.names}"`,
       `"${r.service}"`,
       `"${r.role}"`,
       r.mealType,
       r.scanTime,
-      r.status,
-      r.calories
+      r.status
     ]);
 
     const csvContent = "data:text/csv;charset=utf-8,\uFEFF" 
@@ -198,7 +208,8 @@ export default function ScanHistory({ records, onClearRecords, onResetToDefault 
       const todayStr = new Date().toLocaleDateString('es-PE', {
         year: 'numeric',
         month: 'long',
-        day: 'numeric'
+        day: 'numeric',
+        timeZone: 'America/Lima'
       });
       doc.setFont('Helvetica', 'bold');
       doc.setFontSize(9);
@@ -223,10 +234,10 @@ export default function ScanHistory({ records, onClearRecords, onResetToDefault 
       doc.rect(14, 45, 40, 20, 'F');
       doc.setFontSize(7.5);
       doc.setTextColor(13, 148, 136);
-      doc.text('RACIONES ENTREGADAS', 16, 50);
+      doc.text('RACIONES ENTREGADAS', 34, 50, { align: 'center' });
       doc.setFontSize(13);
       doc.setFont('Helvetica', 'bold');
-      doc.text(`${validScans.length}`, 16, 59);
+      doc.text(`${regularScansCount}`, 34, 59, { align: 'center' });
 
       // Card 2: Duplicados Denegados
       doc.setFillColor(254, 242, 242); // red-50
@@ -235,10 +246,10 @@ export default function ScanHistory({ records, onClearRecords, onResetToDefault 
       doc.setFont('Helvetica', 'normal');
       doc.setFontSize(7.5);
       doc.setTextColor(185, 28, 28);
-      doc.text('DUPLICADOS BLOQUEADOS', 61, 50);
+      doc.text('DUPLICADOS DETENIDOS', 79, 50, { align: 'center' });
       doc.setFontSize(13);
       doc.setFont('Helvetica', 'bold');
-      doc.text(`${duplicateAttempts}`, 61, 59);
+      doc.text(`${duplicateAttempts}`, 79, 59, { align: 'center' });
 
       // Card 3: Fuera de Horario
       doc.setFillColor(255, 251, 235); // amber-50
@@ -247,22 +258,22 @@ export default function ScanHistory({ records, onClearRecords, onResetToDefault 
       doc.setFont('Helvetica', 'normal');
       doc.setFontSize(7.5);
       doc.setTextColor(217, 119, 6);
-      doc.text('FUERA DE HORARIO', 106, 50);
+      doc.text('FUERA DE HORARIO', 124, 50, { align: 'center' });
       doc.setFontSize(13);
       doc.setFont('Helvetica', 'bold');
-      doc.text(`${outOfScheduleCount}`, 106, 59);
+      doc.text(`${outOfScheduleCount}`, 124, 59, { align: 'center' });
 
-      // Card 4: Calorías Totales
+      // Card 4: Raciones Sobrantes
       doc.setFillColor(240, 249, 255); // sky-50
       doc.setDrawColor(7, 89, 133); // sky-700
       doc.rect(149, 45, 47, 20, 'F');
       doc.setFont('Helvetica', 'normal');
       doc.setFontSize(7.5);
       doc.setTextColor(7, 89, 133);
-      doc.text('CALORÍAS ENTREGADAS', 151, 50);
+      doc.text('RACIONES SOBRANTES', 172.5, 50, { align: 'center' });
       doc.setFontSize(13);
       doc.setFont('Helvetica', 'bold');
-      doc.text(`${totalCaloriesServed} kcal`, 151, 59);
+      doc.text(`${Math.max(0, 100 - validScans.length)}`, 172.5, 59, { align: 'center' });
 
       // Table Header
       let currentY = 74;
@@ -283,7 +294,7 @@ export default function ScanHistory({ records, onClearRecords, onResetToDefault 
       doc.setFont('Helvetica', 'normal');
       currentY += 7;
 
-      const printableRecords = records.length === 0 ? [] : records;
+      const printableRecords = validScans;
       printableRecords.slice(0, 32).forEach((r, idx) => {
         // Physical page boundary
         if (currentY > 262) {
@@ -329,11 +340,29 @@ export default function ScanHistory({ records, onClearRecords, onResetToDefault 
         const truncatedService = r.service.length > 25 ? r.service.substring(0, 25) + '...' : r.service;
         doc.text(truncatedService, 86, currentY + 4);
         
+        if (r.mealType === 'DESAYUNO') {
+          doc.setTextColor(184, 98, 0); // vibrant golden amber matching Desayuno breakfast theme
+        } else if (r.mealType === 'ALMUERZO') {
+          doc.setTextColor(0, 160, 137); // green/teal matching Almuerzo theme
+        } else {
+          doc.setTextColor(88, 42, 133); // vibrant purple matching Cena theme
+        }
+        doc.setFont('Helvetica', 'bold');
         doc.text(r.mealType, 136, currentY + 4);
+        doc.setFont('Helvetica', 'normal');
+        doc.setTextColor(51, 65, 85); // Restore default row text color
         doc.text(r.scanTime, 163, currentY + 4);
 
         // Color status labels
-        if (r.status === 'VALID_COMPLETED') {
+        if (r.authByAdmin) {
+          doc.setTextColor(217, 119, 6); // Amber
+          doc.setFont('Helvetica', 'bold');
+          doc.setFontSize(6.5);
+          doc.text('Acreditado', 176, currentY + 2.3);
+          doc.setFontSize(5.2);
+          doc.text('Excepcionalmente', 176, currentY + 4.8);
+          doc.setFontSize(7.5);
+        } else if (r.status === 'VALID_COMPLETED') {
           doc.setTextColor(13, 148, 136); // Teal
           doc.setFont('Helvetica', 'bold');
           doc.text('Acreditado', 176, currentY + 4);
@@ -354,7 +383,7 @@ export default function ScanHistory({ records, onClearRecords, onResetToDefault 
         currentY += 5.8;
       });
 
-      if (records.length === 0) {
+      if (filteredRecords.length === 0) {
         doc.setFontSize(9);
         doc.setTextColor(148, 163, 184);
         doc.text('No se encontraron registros de ración de alimentación cargados para hoy.', 20, currentY + 10);
@@ -524,30 +553,28 @@ export default function ScanHistory({ records, onClearRecords, onResetToDefault 
       </div>
 
       {/* Table Records Body */}
-      <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-xs">
-        <div className="overflow-x-auto">
-          <table className="w-full text-left font-sans border-collapse">
+      <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-xs w-full">
+        <div className="w-full overflow-x-auto">
+          <table className="w-full text-left font-sans border-collapse table-fixed min-w-[950px]">
             <thead>
               <tr className="border-b border-slate-100 bg-slate-50 text-slate-500 text-[10px] uppercase font-black tracking-wider select-none">
-                <th className="py-3 px-4 text-[#342D86]">Trabajador Hospitalario</th>
-                <th className="py-3 px-4 text-[#342D86]">DNI</th>
-                <th className="py-3 px-2 text-[#342D86]">Servicio / Rol</th>
-                <th className="py-3 px-2 text-center text-[#342D86]">Horario</th>
-                <th className="py-3 px-2 text-[#342D86]">Hora Escaneo</th>
-                <th className="py-3 px-4 text-center text-[#342D86]">Estado Validación</th>
-                <th className="py-3 px-4 text-right text-[#342D86]">Aporte Kcal</th>
+                <th className="py-3 px-4 text-[#342D86] w-[23%]">Trabajador Hospitalario</th>
+                <th className="py-3 px-4 text-[#342D86] w-[11%]">DNI</th>
+                <th className="py-3 px-2 text-[#342D86] w-[24%]">Servicio / Rol</th>
+                <th className="py-3 px-2 text-center text-[#342D86] w-[11%]">Horario</th>
+                <th className="py-3 px-2 text-[#342D86] w-[12%]">Hora Escaneo</th>
+                <th className="py-3 px-4 text-center text-[#342D86] w-[19%]">Estado Validación</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100 text-xs text-slate-700">
               {filteredRecords.length === 0 ? (
                 <tr>
-                  <td colSpan={7} className="py-12 text-center text-slate-500 font-bold font-sans">
+                  <td colSpan={6} className="py-12 text-center text-slate-500 font-bold font-sans">
                     Ninguna lectura coincide con los filtros aplicados.
                   </td>
                 </tr>
               ) : (
                 filteredRecords.map((record) => {
-                  const isSuccess = record.status === 'VALID_COMPLETED' || (record.status === 'OUT_OF_SCHEDULE' && record.authByAdmin);
                   return (
                     <tr 
                       key={record.id} 
@@ -557,13 +584,13 @@ export default function ScanHistory({ records, onClearRecords, onResetToDefault 
                       }`}
                     >
                       {/* Worker info */}
-                      <td className="py-3 px-4 font-sans">
-                        <div className={`font-extrabold text-[#342D86] text-sm ${record.status === 'REVOKED' ? 'line-through text-slate-400' : ''}`}>
+                      <td className="py-3 px-4 font-sans truncate">
+                        <div className={`font-extrabold text-[#342D86] text-sm truncate ${record.status === 'REVOKED' ? 'line-through text-slate-400' : ''}`}>
                           {record.lastNames}, {record.names}
                         </div>
                         {record.authByAdmin && (
-                          <div className="text-[9px] text-[#F9B719] font-black mt-0.5 inline-flex items-center gap-0.5">
-                            ⚙️ Excepción autorizada por admin
+                          <div className="text-[9px] text-amber-500 font-extrabold mt-0.5 inline-flex items-center gap-0.5">
+                            ⚙️ Autorizado Excepcionalmente
                           </div>
                         )}
                         {record.status === 'REVOKED' && (
@@ -579,15 +606,15 @@ export default function ScanHistory({ records, onClearRecords, onResetToDefault 
                       </td>
 
                       {/* Service / Job */}
-                      <td className="py-3 px-2">
-                        <div className="font-black text-[11px] text-[#00A089] select-all">{record.service}</div>
-                        <div className="text-[10px] text-slate-500 font-semibold">{record.role}</div>
+                      <td className="py-3 px-2 truncate">
+                        <div className="font-black text-[11px] text-[#00A089] select-all truncate">{record.service}</div>
+                        <div className="text-[10px] text-slate-500 font-semibold truncate">{record.role}</div>
                       </td>
 
                       {/* Meal Schedule Range */}
                       <td className="py-3 px-2 text-center select-none font-bold">
                         <span className={`text-[10px] px-2.5 py-0.5 rounded-full font-black ${
-                          record.mealType === 'DESAYUNO' ? 'bg-[#F9B719]/12 text-[#342D86] border border-[#F9B719]/20' :
+                          record.mealType === 'DESAYUNO' ? 'bg-[#F9B719]/15 text-[#B86200] border border-[#F9B719]/25' :
                           record.mealType === 'ALMUERZO' ? 'bg-[#00A089]/12 text-[#00A089] border border-[#00A089]/20' :
                           'bg-[#582A85]/12 text-[#582A85] border border-[#582A85]/20'
                         }`}>
@@ -603,12 +630,7 @@ export default function ScanHistory({ records, onClearRecords, onResetToDefault 
 
                       {/* Status Check badge */}
                       <td className="py-3 px-4 text-center">
-                        {getStatusBadge(record.status)}
-                      </td>
-
-                      {/* Calorie value */}
-                      <td className={`py-3 px-4 text-right font-mono font-black ${isSuccess ? 'text-[#00A089]' : 'text-slate-400'}`}>
-                        {isSuccess ? `+${record.calories} Kcal` : '0 Kcal'}
+                        {getStatusBadge(record.status, record.authByAdmin)}
                       </td>
                     </tr>
                   );
@@ -625,7 +647,7 @@ export default function ScanHistory({ records, onClearRecords, onResetToDefault 
           <motion.div 
             initial={{ scale: 0.95, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
-            className="bg-white text-slate-900 rounded-3xl p-6 w-full max-w-2xl max-h-[85vh] overflow-y-auto flex flex-col justify-between shadow-2xl relative border-4 border-slate-950"
+            className="bg-white text-slate-900 rounded-[32px] p-8 w-full max-w-4xl max-h-[92vh] overflow-y-auto custom-scrollbar flex flex-col justify-between shadow-2xl relative border-4 border-slate-950"
             id="report-print-dialog"
           >
             {/* Close */}
@@ -660,21 +682,21 @@ export default function ScanHistory({ records, onClearRecords, onResetToDefault 
 
               {/* Grid indices */}
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 text-xs font-sans">
-                <div className="bg-slate-100 p-3 rounded-lg border border-slate-200">
+                <div className="bg-slate-100 p-3 rounded-lg border border-slate-200 text-center flex flex-col justify-center items-center">
                   <span className="text-slate-500 block text-[9px] font-bold uppercase tracking-wide">Ff. Informe:</span>
-                  <span className="font-bold font-mono block mt-0.5">{records[0]?.scanDate || '2026-05-25'}</span>
+                  <span className="font-bold font-mono block mt-0.5 text-center text-slate-800">{records[0]?.scanDate || new Date().toISOString().split('T')[0]}</span>
                 </div>
-                <div className="bg-slate-100 p-3 rounded-lg border border-slate-200">
+                <div className="bg-slate-100 p-3 rounded-lg border border-slate-200 text-center flex flex-col justify-center items-center">
                   <span className="text-slate-500 block text-[9px] font-bold uppercase tracking-wide font-sans">Raciones Servidas:</span>
-                  <span className="font-bold text-slate-950 block text-lg font-mono mt-0.5">{validScans.length}</span>
+                  <span className="font-bold text-slate-950 block text-lg font-mono mt-0.5 text-center">{regularScansCount}</span>
                 </div>
-                <div className="bg-slate-100 p-3 rounded-lg border border-slate-200">
-                  <span className="text-slate-500 block text-[9px] font-bold uppercase tracking-wide">Duplicados Detenidos:</span>
-                  <span className="font-bold text-red-650 block text-lg font-mono mt-0.5">{duplicateAttempts}</span>
+                <div className="bg-slate-100 p-3 rounded-lg border border-slate-200 text-center flex flex-col justify-center items-center">
+                  <span className="text-slate-500 block text-[9px] font-bold uppercase tracking-wide font-sans">Duplicados Detenidos:</span>
+                  <span className="font-bold text-red-650 block text-lg font-mono mt-0.5 text-center">{duplicateAttempts}</span>
                 </div>
-                <div className="bg-slate-100 p-3 rounded-lg border border-slate-200">
-                  <span className="text-slate-500 block text-[9px] font-bold uppercase tracking-wide">Energía Distribuida:</span>
-                  <span className="font-bold text-emerald-800 block text-lg font-mono mt-0.5">{totalCaloriesServed} Kcal</span>
+                <div className="bg-slate-100 p-3 rounded-lg border border-slate-200 text-center flex flex-col justify-center items-center">
+                  <span className="text-slate-500 block text-[9px] font-bold uppercase tracking-wide font-sans">Fuera de Horario:</span>
+                  <span className="font-bold text-amber-700 block text-lg font-mono mt-0.5 text-center">{outOfScheduleCount}</span>
                 </div>
               </div>
 
@@ -683,9 +705,9 @@ export default function ScanHistory({ records, onClearRecords, onResetToDefault 
                 <span className="text-[10px] text-slate-700 font-bold uppercase tracking-wider block">Distribución de Consumo por ÁREAS/SERVICIOS:</span>
                 <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
                   {Object.entries(serviceCounts).map(([serv, count]) => (
-                    <div key={serv} className="border border-slate-200 px-3 py-1.5 rounded text-[11px] flex items-center justify-between">
-                      <span className="font-semibold text-slate-800 truncate">{serv}</span>
-                      <span className="bg-slate-900 text-white min-w-5 h-5 flex items-center justify-center font-mono text-[9px] rounded font-bold ml-1 px-1.5">
+                    <div key={serv} className="border border-slate-200 px-3 py-1.5 rounded-xl text-[11px] flex items-center justify-between min-w-0 bg-slate-50">
+                      <span className="font-semibold text-slate-800 truncate mr-2 flex-1 min-w-0 leading-tight" title={serv}>{serv}</span>
+                      <span className="bg-slate-900 text-white h-6 flex items-center justify-center font-mono text-[9px] rounded-lg font-bold px-2.5 whitespace-nowrap flex-shrink-0 select-none">
                         {count} raciones
                       </span>
                     </div>
@@ -699,32 +721,51 @@ export default function ScanHistory({ records, onClearRecords, onResetToDefault 
               {/* Detail section */}
               <div className="space-y-2">
                 <span className="text-[10px] text-slate-700 font-bold uppercase tracking-wider block">Lista Nominal de Trabajadores Registrados:</span>
-                <div className="border border-slate-200 rounded-lg overflow-hidden text-[10px]">
-                  <table className="w-full text-left">
-                    <thead className="bg-slate-100 font-bold select-none border-b border-slate-200">
+                <div className="border border-slate-200 rounded-lg overflow-x-auto w-full text-[10px]">
+                  <table className="w-full text-left min-w-[650px]">
+                    <thead className="bg-slate-100 font-bold select-none border-b border-slate-200 text-slate-700">
                       <tr>
-                        <th className="py-1.5 px-3">DNI</th>
-                        <th className="py-1.5 px-3">Nombres y Apellidos</th>
-                        <th className="py-1.5 px-3">Servicio</th>
-                        <th className="py-1.5 px-3">Servido</th>
-                        <th className="py-1.5 px-3">Hora de Escaneo</th>
+                        <th className="py-2 px-3 w-[15%]">DNI</th>
+                        <th className="py-2 px-3 w-[30%]">Nombres y Apellidos</th>
+                        <th className="py-2 px-3 w-[25%]">Servicio</th>
+                        <th className="py-2 px-3 text-center w-[12%]">Horario</th>
+                        <th className="py-2 px-3 text-center w-[18%] font-black uppercase tracking-wider text-[#342D86]">Estado de Validación</th>
+                        <th className="py-2 px-3 text-right w-[15%]">Hora</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-200 font-mono">
                       {validScans.map(s => (
-                        <tr key={s.id} className="hover:bg-slate-50">
-                          <td className="py-1 px-3 text-slate-600">{s.dni}</td>
-                          <td className="py-1 px-3 font-sans font-semibold text-slate-900">{s.lastNames}, {s.names}</td>
-                          <td className="py-1 px-3 font-sans text-slate-700">{s.service}</td>
-                          <td className="py-1 px-3 select-none text-center">
-                            <span className="bg-slate-200 text-slate-800 px-1 rounded text-[8px] uppercase font-bold">{s.mealType}</span>
+                        <tr key={s.id} className="hover:bg-slate-50 text-slate-800">
+                          <td className="py-1.5 px-3 text-slate-600">{s.dni}</td>
+                          <td className="py-1.5 px-3 font-sans font-semibold text-slate-900">{s.lastNames}, {s.names}</td>
+                          <td className="py-1.5 px-3 font-sans text-slate-700 truncate">{s.service}</td>
+                          <td className="py-1.5 px-3 select-none text-center">
+                            <span className={`text-[9.5px] px-2.5 py-0.5 rounded-full font-black font-sans border ${
+                              s.mealType === 'DESAYUNO' ? 'bg-[#F9B719]/15 text-[#B86200] border-[#F9B719]/30' :
+                              s.mealType === 'ALMUERZO' ? 'bg-[#00A089]/12 text-[#00A089] border-[#00A089]/25' :
+                              'bg-[#582A85]/12 text-[#582A85] border-[#582A85]/25'
+                            }`}>
+                              {s.mealType}
+                            </span>
                           </td>
-                          <td className="py-1 px-3 text-slate-500 text-right">{s.scanTime}</td>
+                          <td className="py-1.5 px-3 text-center select-none">
+                            {s.authByAdmin ? (
+                              <div className="inline-flex flex-col items-center justify-center gap-0.5 bg-amber-50 text-amber-700 border border-amber-200 px-3 py-1 rounded-xl uppercase font-sans leading-none min-w-[120px]">
+                                <span className="text-[9.5px] font-black">Acreditado</span>
+                                <span className="text-[7.5px] font-bold text-amber-600/95">Excepcionalmente</span>
+                              </div>
+                            ) : (
+                              <div className="inline-flex flex-col items-center justify-center bg-[#00A089]/8 text-[#00A089] border border-[#00A089]/15 px-3 py-1.5 rounded-xl uppercase font-sans leading-none min-w-[120px]">
+                                <span className="text-[9.5px] font-black">Acreditado</span>
+                              </div>
+                            )}
+                          </td>
+                          <td className="py-1.5 px-3 text-slate-500 text-right">{s.scanTime}</td>
                         </tr>
                       ))}
                       {validScans.length === 0 && (
                         <tr>
-                          <td colSpan={5} className="py-4 text-center text-slate-400 italic">No hay registros de raciones válidas todavía hoy.</td>
+                          <td colSpan={6} className="py-4 text-center text-slate-400 italic">No hay registros de raciones válidas todavía hoy.</td>
                         </tr>
                       )}
                     </tbody>

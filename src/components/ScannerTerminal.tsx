@@ -8,12 +8,14 @@ import { Worker, ScanStatus, MealType, MealSchedule } from '../types';
 import { HOSPITAL_WORKERS } from '../data';
 
 interface ScannerTerminalProps {
-  onScanResult: (dni: string, authOverride?: boolean) => void;
+  onScanResult: (dni: string) => void;
+  onConfirmScan: (authOverride?: boolean) => void;
   activeMeal: MealSchedule | null;
   lastScannedWorker: Worker | null;
   lastScanStatus: ScanStatus | null;
   lastScanMessage: string | null;
   lastScanTime: string | null;
+  lastScanAuthByAdmin?: boolean;
   onClearLastScan: () => void;
   onRevokeLastScan: () => void;
   isSimulatedTimeActive: boolean;
@@ -21,11 +23,13 @@ interface ScannerTerminalProps {
 
 export default function ScannerTerminal({
   onScanResult,
+  onConfirmScan,
   activeMeal,
   lastScannedWorker,
   lastScanStatus,
   lastScanMessage,
   lastScanTime,
+  lastScanAuthByAdmin = false,
   onClearLastScan,
   onRevokeLastScan,
   isSimulatedTimeActive
@@ -114,6 +118,14 @@ export default function ScannerTerminal({
           title: 'ACCESO AUTORIZADO',
           badgeText: 'Ticket Válido',
         };
+      case 'PENDING_VALID':
+        return {
+          icon: <Clock className="w-12 h-12 text-[#342D86] animate-pulse" />,
+          bgColor: 'bg-[#342D86]/8 border border-[#342D86]/20',
+          textColor: 'text-[#342D86]',
+          title: 'ESCANEO DETECTADO - PENDIENTE DE CONFIRMACIÓN',
+          badgeText: 'Por Autorizar',
+        };
       case 'DUPLICATE':
         return {
           icon: <XCircle className="w-12 h-12 text-[#B51A82] animate-pulse" />,
@@ -164,234 +176,284 @@ export default function ScannerTerminal({
       {/* 1. Scanning Result Screen - Rendered at the TOP of the workspace */}
       <AnimatePresence mode="wait">
         {lastScannedWorker && lastScanStatus && (
-          <motion.div
-            initial={{ opacity: 0, y: -15 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -15 }}
-            transition={{ duration: 0.25 }}
-            className="bg-white border border-slate-200 rounded-3xl p-6 shadow-xl relative"
-            id="scan-result-card"
-          >
-            {/* Colored ambient flash */}
-            <div className={`absolute inset-0 opacity-[0.02] rounded-3xl pointer-events-none transition-colors duration-300 ${
-              lastScanStatus === 'VALID_COMPLETED' ? 'bg-[#00A089]' : 
-              lastScanStatus === 'DUPLICATE' ? 'bg-[#B51A82]' : 
-              lastScanStatus === 'REVOKED' ? 'bg-red-650' : 'bg-[#F9B719]'
-            }`}></div>
+          <div className="grid grid-cols-1 lg:grid-cols-[auto_1fr] gap-4 items-stretch" id="scanned-result-container">
+            {/* Vertical "Abrir puerto de escaneo" button on the left */}
+            <motion.button
+              initial={{ opacity: 0, x: -15 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: -15 }}
+              transition={{ duration: 0.25 }}
+              type="button"
+              onClick={onClearLastScan}
+              className="lg:w-16 w-full bg-[#342D86] hover:bg-[#342D86]/95 text-white font-sans text-xs font-black p-4 rounded-3xl transition-all cursor-pointer flex lg:flex-col items-center justify-center gap-3.5 shadow-md uppercase tracking-wider hover:scale-[1.01] active:scale-[0.99] border border-transparent select-none"
+              id="open-scanning-port-button"
+            >
+              <Scan className="w-5 h-5 shrink-0 animate-pulse lg:mb-1" />
+              <span className="lg:[writing-mode:vertical-lr] lg:rotate-180 text-center tracking-widest leading-none block lg:py-2 whitespace-nowrap">
+                Abrir puerto de escaneo
+              </span>
+            </motion.button>
 
-            {/* Scanned Worker Visual Header */}
-            <div className="flex items-center justify-between gap-4 border-b border-slate-100 pb-4 mb-5">
-              <div className="flex items-center gap-2">
-                <UserCheck className="w-5 h-5 text-[#342D86]" />
-                <h3 className="font-sans font-black text-[#342D86] text-lg uppercase tracking-wide">Trabajador del INSN</h3>
-              </div>
-              <button
-                type="button"
-                onClick={onClearLastScan}
-                className="text-slate-400 hover:text-slate-600 p-1.5 rounded-lg bg-slate-50 hover:bg-slate-100 transition-colors border border-slate-200 cursor-pointer flex items-center justify-center"
-                title="Cerrar"
-              >
-                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
-              </button>
-            </div>
+            <motion.div
+              initial={{ opacity: 0, scale: 0.98 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.98 }}
+              transition={{ duration: 0.25 }}
+              className="bg-white border border-slate-200 rounded-3xl p-6 shadow-xl relative flex-1"
+              id="scan-result-card"
+            >
+              {/* Colored ambient flash */}
+              <div className={`absolute inset-0 opacity-[0.02] rounded-3xl pointer-events-none transition-colors duration-300 ${
+                lastScanStatus === 'VALID_COMPLETED' ? 'bg-[#00A089]' : 
+                lastScanStatus === 'DUPLICATE' ? 'bg-[#B51A82]' : 
+                lastScanStatus === 'REVOKED' ? 'bg-red-650' : 'bg-[#F9B719]'
+              }`}></div>
 
-            {/* Split layout inside results card */}
-            <div className="grid grid-cols-1 md:grid-cols-12 gap-8 items-center">
-              
-              {/* Profile Image card (from 3 expanded to 4 cols) */}
-              <div className="md:col-span-4 flex flex-col items-center text-center space-y-4">
-                <div className="relative">
-                  {/* Status Indicator Frame Rings */}
-                  <div className={`absolute -inset-2 rounded-full blur-md opacity-40 transition-colors ${
-                    lastScanStatus === 'VALID_COMPLETED' ? 'bg-[#00A089]' :
-                    lastScanStatus === 'DUPLICATE' ? 'bg-[#B51A82]' :
-                    lastScanStatus === 'REVOKED' ? 'bg-red-650' : 'bg-[#F9B719]'
-                  }`}></div>
-                  
-                  <img
-                    src={lastScannedWorker.photoUrl}
-                    alt={`${lastScannedWorker.names} ${lastScannedWorker.lastNames}`}
-                    referrerPolicy="no-referrer"
-                    className="relative w-40 h-40 md:w-48 md:h-48 object-cover rounded-full border-4 border-white shadow-xl"
-                    onError={(e) => {
-                      (e.target as HTMLImageElement).src = `https://api.dicebear.com/7.x/adventurer/svg?seed=${lastScannedWorker.names}`;
-                    }}
-                  />
-                  
-                  {/* Miniature badge inside image */}
-                  <div className={`absolute bottom-2 right-2 p-2.5 rounded-full border-2 border-white ${
-                    lastScannedWorker.status === 'ACTIVE' ? 'bg-[#00A089]' : 
-                    lastScannedWorker.status === 'VACATION' ? 'bg-[#F9B719]' : 'bg-[#B51A82]'
-                  }`} title={`Estado del Trabajador: ${lastScannedWorker.status}`} />
+              {/* Scanned Worker Visual Header */}
+              <div className="flex items-center justify-between gap-4 border-b border-slate-100 pb-4 mb-5">
+                <div className="flex items-center gap-2">
+                  <UserCheck className="w-5 h-5 text-[#342D86]" />
+                  <h3 className="font-sans font-black text-[#342D86] text-lg uppercase tracking-wide">Trabajador del INSN</h3>
                 </div>
-
-                <div>
-                  <span className="text-[10px] bg-slate-50 border border-slate-200 px-2.5 py-1 rounded-full text-slate-500 font-mono font-bold tracking-wider">
-                    ID: {lastScannedWorker.id.toUpperCase()}
-                  </span>
-                </div>
+                <button
+                  type="button"
+                  onClick={onClearLastScan}
+                  className="text-slate-400 hover:text-slate-600 p-1.5 rounded-lg bg-slate-50 hover:bg-slate-100 transition-colors border border-slate-200 cursor-pointer flex items-center justify-center"
+                  title="Cerrar"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                </button>
               </div>
 
-              {/* Central Information blocks (adjusted to 5 cols to leave space for wider photo) */}
-              <div className="md:col-span-5 space-y-4">
-                <div>
-                  <h4 className="font-sans font-black text-[#342D86] text-2xl truncate uppercase tracking-tight leading-none">
-                    {lastScannedWorker.names} {lastScannedWorker.lastNames}
-                  </h4>
-                  <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mt-1.5">
-                    <span className="text-sm font-bold text-[#00A089] uppercase">
-                      {lastScannedWorker.service}
-                    </span>
-                    <span className="text-xs text-slate-300">•</span>
-                    <span className="text-xs text-slate-500 font-extrabold font-sans uppercase">
-                      {lastScannedWorker.role}
-                    </span>
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-2 gap-4 bg-slate-50 p-4 rounded-2xl border border-slate-200 text-xs shadow-xs">
-                  <div>
-                    <span className="text-slate-500 block text-[10px] uppercase font-bold tracking-wider font-sans">Número de DNI:</span>
-                    <span className="font-mono text-slate-800 mt-0.5 block font-extrabold text-sm">{lastScannedWorker.dni}</span>
-                  </div>
-                  <div>
-                    <span className="text-slate-500 block text-[10px] uppercase font-bold tracking-wider font-sans">Condición Laboral:</span>
-                    <span className={`mt-0.5 block font-bold text-xs ${
-                      lastScanStatus === 'INVALID_CODE' ? 'text-[#B51A82]' :
-                      lastScannedWorker.status === 'ACTIVE' ? 'text-[#00A089]' :
-                      lastScannedWorker.status === 'VACATION' ? 'text-[#F9B719]' : 'text-[#B51A82]'
-                    }`}>
-                      {lastScanStatus === 'INVALID_CODE' ? 'NO REGISTRADO' :
-                       lastScannedWorker.status === 'ACTIVE' ? 'ACTIVO (DE TURNO)' :
-                       lastScannedWorker.status === 'VACATION' ? 'EN VACACIONES' : 'SANCIONADO / SUSPENDIDO'}
-                    </span>
-                  </div>
-                </div>
-
-                {/* Status Notice Description */}
-                <div className={`p-4 rounded-xl border flex items-start gap-3.5 ${getStatusConfig(lastScanStatus).bgColor}`}>
-                  <div className="mt-0.5 shrink-0">
-                    {lastScanStatus === 'VALID_COMPLETED' && <CheckCircle2 className="w-5 h-5 text-[#00A089]" />}
-                    {lastScanStatus === 'DUPLICATE' && <XCircle className="w-5 h-5 text-[#B51A82]" />}
-                    {lastScanStatus === 'OUT_OF_SCHEDULE' && <AlertTriangle className="w-5 h-5 text-[#F9B719]" />}
-                    {lastScanStatus === 'SUSPENDED_WORKER' && <ShieldAlert className="w-5 h-5 text-[#582A85]" />}
-                    {lastScanStatus === 'INVALID_CODE' && <InfoIcon className="w-5 h-5 text-[#B51A82]" />}
-                    {lastScanStatus === 'REVOKED' && <XCircle className="w-5 h-5 text-red-650" />}
-                  </div>
-                  <div>
-                    <div className="font-sans font-black text-xs text-[#342D86] uppercase tracking-wide">
-                      {getStatusConfig(lastScanStatus).title}
-                    </div>
-                    <p className="text-xs text-slate-700 font-medium mt-1 leading-relaxed">
-                      {lastScanMessage}
-                    </p>
-                    <div className="text-[10px] text-slate-500 font-mono mt-1">
-                      Hora de registro: {lastScanTime}
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Status Action controls (3 cols) */}
-              <div className="md:col-span-3 flex flex-col gap-3 justify-center items-stretch h-full">
+              {/* Split layout inside results card */}
+              <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
                 
-                <div className={`text-center py-2 px-3 rounded-2xl border text-xs font-bold ${
-                  lastScanStatus === 'VALID_COMPLETED' ? 'bg-[#00A089]/10 border-[#00A089]/20 text-[#00A089]' :
-                  lastScanStatus === 'DUPLICATE' ? 'bg-[#B51A82]/10 border-[#B51A82]/20 text-[#B51A82]' :
-                  'bg-[#F9B719]/10 border-[#F9B719]/25 text-[#342D86]'
-                }`}>
-                  <div className="text-[9px] uppercase text-slate-500 tracking-widest font-black mb-1">Estado de Comedor</div>
-                  {getStatusConfig(lastScanStatus).badgeText}
+                {/* Profile Image card (from 3 expanded to 4 cols) */}
+                <div className="lg:col-span-4 flex flex-col items-center text-center space-y-4">
+                  <div className="relative">
+                    {/* Status Indicator Frame Rings */}
+                    <div className={`absolute -inset-2 rounded-full blur-md opacity-40 transition-colors ${
+                      lastScanStatus === 'VALID_COMPLETED' ? 'bg-[#00A089]' :
+                      lastScanStatus === 'DUPLICATE' ? 'bg-[#B51A82]' :
+                      lastScanStatus === 'REVOKED' ? 'bg-red-650' : 'bg-[#F9B719]'
+                    }`}></div>
+                    
+                    <img
+                      src={lastScannedWorker.photoUrl}
+                      alt={`${lastScannedWorker.names} ${lastScannedWorker.lastNames}`}
+                      referrerPolicy="no-referrer"
+                      className="relative w-40 h-40 lg:w-48 lg:h-48 object-cover rounded-full border-4 border-white shadow-xl"
+                      onError={(e) => {
+                        (e.target as HTMLImageElement).src = `https://api.dicebear.com/7.x/adventurer/svg?seed=${lastScannedWorker.names}`;
+                      }}
+                    />
+                    
+                    {/* Miniature badge inside image */}
+                    <div className={`absolute bottom-2 right-2 p-2.5 rounded-full border-2 border-white ${
+                      lastScannedWorker.status === 'ACTIVE' ? 'bg-[#00A089]' : 'bg-[#B51A82]'
+                    }`} title={`Estado del Trabajador: ${lastScannedWorker.status}`} />
+                  </div>
+
+                  <div>
+                    <span className="text-[10px] bg-slate-50 border border-slate-200 px-2.5 py-1 rounded-full text-slate-500 font-mono font-bold tracking-wider">
+                      ID: {lastScannedWorker.id.toUpperCase()}
+                    </span>
+                  </div>
                 </div>
 
-                {lastScanStatus === 'REVOKED' ? (
-                  <div className="p-3 bg-red-50 rounded-2xl border border-red-250 text-center text-[11px] text-red-700 font-bold leading-normal flex flex-col gap-1 items-center justify-center">
-                    <span className="flex items-center gap-1.5 justify-center font-black uppercase text-xs">
-                      <XCircle className="w-4 h-4 text-red-600" />
-                      Ticket Anulado
-                    </span>
-                    <span className="text-[9.5px] text-slate-600 font-semibold leading-snug">El consumo ha sido invalidado. El portal ya registró la revocación del beneficio de comedor del INSN.</span>
-                  </div>
-                ) : isConfirmingRevoke ? (
-                  <motion.div
-                    initial={{ opacity: 0, scale: 0.95 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    className="bg-rose-50 border border-rose-200 rounded-2xl p-3.5 space-y-3 text-center shadow-md"
-                  >
-                    <p className="text-xs text-rose-850 font-black font-sans leading-tight">
-                      ¿Seguro que quieres revocar este ticket?
-                    </p>
-                    <div className="flex gap-2 justify-center">
-                      <button
-                        type="button"
-                        onClick={() => {
-                          onRevokeLastScan();
-                          setIsConfirmingRevoke(false);
-                        }}
-                        className="flex-1 bg-red-600 hover:bg-red-700 text-white text-[11px] font-black px-2.5 py-1.5 rounded-lg transition-colors cursor-pointer font-sans uppercase tracking-wider"
-                      >
-                        Sí, revocar
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setIsConfirmingRevoke(false)}
-                        className="bg-white hover:bg-slate-100 text-slate-700 border border-slate-350 text-[11px] font-black px-2.5 py-1.5 rounded-lg transition-colors cursor-pointer font-sans uppercase tracking-wider"
-                      >
-                        No
-                      </button>
+                {/* Central Information blocks (adjusted to 5 cols to leave space for wider photo) */}
+                <div className="lg:col-span-5 space-y-4">
+                  <div>
+                    <h4 className="font-sans font-black text-[#342D86] text-2xl truncate uppercase tracking-tight leading-none">
+                      {lastScannedWorker.names} {lastScannedWorker.lastNames}
+                    </h4>
+                    <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mt-1.5">
+                      <span className="text-sm font-bold text-[#00A089] uppercase">
+                        {lastScannedWorker.service}
+                      </span>
+                      <span className="text-xs text-slate-300">•</span>
+                      <span className="text-xs text-slate-500 font-extrabold font-sans uppercase">
+                        {lastScannedWorker.role}
+                      </span>
                     </div>
-                  </motion.div>
-                ) : (
-                  <div className="flex flex-col gap-2">
-                    <button
-                      type="button"
-                      onClick={onClearLastScan}
-                      className="w-full bg-[#00A089] hover:bg-[#00A089]/90 text-white font-sans text-xs font-black py-2.5 px-3 rounded-xl transition-all cursor-pointer flex items-center justify-center gap-1.5 shadow-md uppercase tracking-wider"
-                    >
-                      <CheckCircle2 className="w-4 h-4" />
-                      <span>Confirmar Consumo</span>
-                    </button>
-                    
-                    <button
-                      type="button"
-                      onClick={() => setIsConfirmingRevoke(true)}
-                      className="w-full bg-red-600 hover:bg-red-700 text-white font-sans text-xs font-black py-2.5 px-3 rounded-xl transition-all cursor-pointer flex items-center justify-center gap-1.5 shadow-md uppercase tracking-wider"
-                    >
-                      <XCircle className="w-4 h-4" />
-                      <span>Revocar Ticket</span>
-                    </button>
                   </div>
-                )}
 
-                {/* SPECIAL ADMINISTRATOR ACTION OVERRIDE */}
-                {isBypassAvailable && !isConfirmingRevoke && (
-                  <motion.div 
-                    initial={{ scale: 0.95, opacity: 0 }}
-                    animate={{ scale: 1, opacity: 1 }}
-                    className="p-3 bg-slate-50 rounded-2xl border border-slate-200 space-y-2 text-center mt-1"
-                  >
-                    <div className="text-[10px] text-slate-600 font-medium leading-normal font-sans">
-                      ⚠️ ¿Autorizar manualmente como excepción? (Por ejemplo: doble turno médico o retraso justificado).
+                  <div className="grid grid-cols-2 gap-4 bg-slate-50 p-4 rounded-2xl border border-slate-200 text-xs shadow-xs">
+                    <div>
+                      <span className="text-slate-500 block text-[10px] uppercase font-bold tracking-wider font-sans">Número de DNI:</span>
+                      <span className="font-mono text-slate-800 mt-0.5 block font-extrabold text-sm">{lastScannedWorker.dni}</span>
                     </div>
-                    <button
-                      type="button"
-                      onClick={() => onScanResult(lastScannedWorker.dni, true)}
-                      className="w-full bg-[#F9B719] hover:bg-[#F9B719]/90 text-[#342D86] font-sans text-xs font-black py-2 px-3 rounded-xl transition-all cursor-pointer flex items-center justify-center gap-1 shadow-md"
-                    >
-                      <span>Forzar Autorización</span>
-                      <ArrowRight className="w-3.5 h-3.5" />
-                    </button>
-                  </motion.div>
-                )}
+                    <div>
+                      <span className="text-slate-500 block text-[10px] uppercase font-bold tracking-wider font-sans">Condición Laboral:</span>
+                      <span className={`mt-0.5 block font-bold text-xs ${
+                        lastScanStatus === 'INVALID_CODE' ? 'text-[#B51A82]' :
+                        lastScannedWorker.status === 'ACTIVE' ? 'text-[#00A089]' : 'text-[#B51A82]'
+                      }`}>
+                        {lastScanStatus === 'INVALID_CODE' ? 'NO REGISTRADO' :
+                         lastScannedWorker.status === 'ACTIVE' ? 'ACTIVO (DE TURNO)' : 'SANCIONADO / SUSPENDIDO'}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Status Notice Description */}
+                  <div className={`p-4 rounded-xl border flex items-start gap-3.5 ${getStatusConfig(lastScanStatus).bgColor}`}>
+                    <div className="mt-0.5 shrink-0">
+                      {lastScanStatus === 'VALID_COMPLETED' && <CheckCircle2 className="w-5 h-5 text-[#00A089]" />}
+                      {lastScanStatus === 'PENDING_VALID' && <Clock className="w-5 h-5 text-[#342D86] animate-pulse" />}
+                      {lastScanStatus === 'DUPLICATE' && <XCircle className="w-5 h-5 text-[#B51A82]" />}
+                      {lastScanStatus === 'OUT_OF_SCHEDULE' && <AlertTriangle className="w-5 h-5 text-[#F9B719]" />}
+                      {lastScanStatus === 'SUSPENDED_WORKER' && <ShieldAlert className="w-5 h-5 text-[#582A85]" />}
+                      {lastScanStatus === 'INVALID_CODE' && <InfoIcon className="w-5 h-5 text-[#B51A82]" />}
+                      {lastScanStatus === 'REVOKED' && <XCircle className="w-5 h-5 text-red-650" />}
+                    </div>
+                    <div>
+                      <div className="font-sans font-black text-xs text-[#342D86] uppercase tracking-wide">
+                        {getStatusConfig(lastScanStatus).title}
+                      </div>
+                      <p className="text-xs text-slate-700 font-medium mt-1 leading-relaxed">
+                        {lastScanMessage}
+                      </p>
+                      <div className="text-[10px] text-slate-500 font-mono mt-1">
+                        Hora de registro: {lastScanTime}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Status Action controls (3 cols) */}
+                <div className="lg:col-span-3 flex flex-col gap-3 justify-center items-stretch h-full">
+                  
+                  <div className={`text-center py-2 px-3 rounded-2xl border text-xs font-bold ${
+                    lastScanStatus === 'VALID_COMPLETED' ? 'bg-[#00A089]/10 border-[#00A089]/20 text-[#00A089]' :
+                    lastScanStatus === 'PENDING_VALID' ? 'bg-[#342D86]/10 border-[#342D86]/20 text-[#342D86]' :
+                    lastScanStatus === 'DUPLICATE' ? 'bg-[#B51A82]/10 border-[#B51A82]/20 text-[#B51A82]' :
+                    'bg-[#F9B719]/10 border-[#F9B719]/25 text-[#342D86]'
+                  }`}>
+                    <div className="text-[9px] uppercase text-slate-500 tracking-widest font-black mb-1">Estado de Comedor</div>
+                    {getStatusConfig(lastScanStatus).badgeText}
+                  </div>
+
+                  {lastScanStatus === 'REVOKED' ? (
+                    <div className="p-3 bg-red-50 rounded-2xl border border-red-250 text-center text-[11px] text-red-700 font-bold leading-normal flex flex-col gap-1 items-center justify-center">
+                      <span className="flex items-center gap-1.5 justify-center font-black uppercase text-xs">
+                        <XCircle className="w-4 h-4 text-red-600" />
+                        Ticket Anulado
+                      </span>
+                      <span className="text-[9.5px] text-slate-600 font-semibold leading-snug">El consumo ha sido invalidado. El portal ya registró la revocación del beneficio de comedor del INSN.</span>
+                      <button
+                        type="button"
+                        onClick={onClearLastScan}
+                        className="w-full mt-1.5 bg-slate-500 hover:bg-slate-600 text-white font-sans text-xs font-black py-2 px-3 rounded-xl transition-all cursor-pointer flex items-center justify-center gap-1.5 shadow-md uppercase tracking-wider"
+                      >
+                        <RefreshCw className="w-4 h-4" />
+                        <span>Abrir Puerto</span>
+                      </button>
+                    </div>
+                  ) : lastScanStatus === 'OUT_OF_SCHEDULE' ? (
+                    <div className="flex flex-col gap-2 bg-amber-50/40 p-3 rounded-2xl border border-amber-200">
+                      <div className="text-[10px] text-amber-900 font-bold leading-tight font-sans text-center mb-1">
+                        ⚠️ ¿Autorizar excepcionalmente como caso especial o retraso justificado?
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => onConfirmScan(true)}
+                        className="w-full bg-[#F9B719] hover:bg-[#F9B719]/90 text-[#342D86] font-sans text-xs font-black py-2.5 px-3 rounded-xl transition-all cursor-pointer flex items-center justify-center gap-1.5 shadow-md uppercase tracking-wider"
+                      >
+                        <ArrowRight className="w-4 h-4" />
+                        <span>Autorizar Excepcionalmente</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={onClearLastScan}
+                        className="w-full bg-slate-500 hover:bg-slate-600 text-white font-sans text-xs font-black py-2.5 px-3 rounded-xl transition-all cursor-pointer flex items-center justify-center gap-1.5 shadow-md uppercase tracking-wider"
+                      >
+                        <RefreshCw className="w-4 h-4" />
+                        <span>Abrir Puerto (Escanear Otro)</span>
+                      </button>
+                    </div>
+                  ) : lastScanStatus === 'PENDING_VALID' ? (
+                    <div className="flex flex-col gap-2">
+                      <button
+                        type="button"
+                        onClick={() => onConfirmScan(false)}
+                        className="w-full bg-[#00A089] hover:bg-[#00A089]/90 text-white font-sans text-xs font-black py-2.5 px-3 rounded-xl transition-all cursor-pointer flex items-center justify-center gap-1.5 shadow-md uppercase tracking-wider"
+                      >
+                        <CheckCircle2 className="w-4 h-4" />
+                        <span>Autorizar Consumo</span>
+                      </button>
+                      
+                      <button
+                        type="button"
+                        onClick={onClearLastScan}
+                        className="w-full bg-slate-500 hover:bg-slate-600 text-white font-sans text-xs font-black py-2.5 px-3 rounded-xl transition-all cursor-pointer flex items-center justify-center gap-1.5 shadow-md uppercase tracking-wider"
+                      >
+                        <RefreshCw className="w-4 h-4" />
+                        <span>Abrir Puerto (Ignorar)</span>
+                      </button>
+                    </div>
+                  ) : lastScanStatus === 'VALID_COMPLETED' ? (
+                    lastScanAuthByAdmin ? (
+                      <div className="p-3.5 bg-amber-50 rounded-2xl border border-amber-250 text-center text-[11px] text-amber-700 font-bold leading-normal flex flex-col gap-2 items-center justify-center">
+                        <span className="flex items-center gap-1.5 justify-center font-black uppercase text-xs text-amber-600">
+                          <UserCheck className="w-4 h-4 text-amber-600" />
+                          Autorización Concedida
+                        </span>
+                        <span className="text-[9.5px] text-slate-600 font-semibold leading-normal">
+                          Se registró la ración excepcional fuera de horario de manera exitosa en el hospital.
+                        </span>
+                        <button
+                          type="button"
+                          onClick={onClearLastScan}
+                          className="w-full mt-1.5 bg-[#342D86] hover:bg-[#342D86]/95 text-white font-sans text-xs font-black py-2.5 px-3 rounded-xl transition-all cursor-pointer flex items-center justify-center gap-1.5 shadow-md uppercase tracking-wider"
+                        >
+                          <Scan className="w-4 h-4" />
+                          <span>Abrir Puerto (Listo)</span>
+                        </button>
+                      </div>
+                    ) : (
+                      <div className="p-3.5 bg-emerald-50 rounded-2xl border border-emerald-250 text-center text-[11px] text-emerald-800 font-bold leading-normal flex flex-col gap-2 items-center justify-center">
+                        <span className="flex items-center gap-1.5 justify-center font-black uppercase text-xs text-emerald-600">
+                          <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+                          Ración Autorizada
+                        </span>
+                        <span className="text-[9.5px] text-slate-600 font-semibold leading-normal">
+                          Se registró el consumo regular de manera exitosa en el hospital. No se permite revocar una ración ya confirmada.
+                        </span>
+                        
+                        <div className="flex flex-col gap-1.5 w-full mt-1.5">
+                          <button
+                            type="button"
+                            onClick={onClearLastScan}
+                            className="w-full bg-[#342D86] hover:bg-[#342D86]/95 text-white font-sans text-xs font-black py-2.5 px-3 rounded-xl transition-all cursor-pointer flex items-center justify-center gap-1.5 shadow-md uppercase tracking-wider"
+                          >
+                            <Scan className="w-4 h-4" />
+                            <span>Abrir Puerto (Listo)</span>
+                          </button>
+                        </div>
+                      </div>
+                    )
+                  ) : (
+                    <div className="flex flex-col gap-2">
+                      <button
+                        type="button"
+                        onClick={onClearLastScan}
+                        className="w-full bg-slate-500 hover:bg-slate-600 text-white font-sans text-xs font-black py-2.5 px-3 rounded-xl transition-all cursor-pointer flex items-center justify-center gap-1.5 shadow-md uppercase tracking-wider"
+                      >
+                        <RefreshCw className="w-4 h-4" />
+                        <span>Abrir Puerto</span>
+                      </button>
+                    </div>
+                  )}
+                </div>
+
               </div>
-
-            </div>
-          </motion.div>
+            </motion.div>
+          </div>
         )}
       </AnimatePresence>
 
       {/* 2. Scanning Workspace Station - Replaced with Open Port button when professional is displayed */}
-      {!lastScannedWorker ? (
+      {!lastScannedWorker && (
         <div className="bg-white border border-slate-200 rounded-3xl p-6 shadow-md overflow-hidden relative">
           <div className="absolute top-0 left-0 w-32 h-32 bg-[#342D86]/5 rounded-full blur-3xl pointer-events-none"></div>
           
@@ -544,18 +606,6 @@ export default function ScannerTerminal({
 
             </div>
           </div>
-        </div>
-      ) : (
-        <div className="text-center py-2 select-none">
-          <button
-            type="button"
-            onClick={onClearLastScan}
-            className="w-full bg-[#342D86] hover:bg-[#342D86]/95 text-white font-sans text-sm sm:text-base font-black py-4 px-6 rounded-2xl transition-all cursor-pointer flex items-center justify-center gap-2.5 shadow-md uppercase tracking-wider hover:scale-[1.01] active:scale-[0.99] border border-transparent"
-            id="open-scanning-port-button"
-          >
-            <Scan className="w-5 h-5 animate-pulse" />
-            <span>Abrir puerto de escaneo</span>
-          </button>
         </div>
       )}
     </div>

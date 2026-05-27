@@ -2,6 +2,7 @@ export type MealType = 'DESAYUNO' | 'ALMUERZO' | 'CENA';
 
 export type ScanStatus = 
   | 'VALID_COMPLETED' 
+  | 'PENDING_VALID'
   | 'DUPLICATE' 
   | 'OUT_OF_SCHEDULE' 
   | 'INVALID_CODE' 

@@ -56,8 +56,8 @@ export default function NotificationCenter({
       );
     } else if (preset === 2) {
       onAddSimulatedNotif(
-        '⚠️ Límite Calórico Diario',
-        'Se ha distribuido el 80% de la energía presupuestada para el servicio diario.',
+        '⚠️ Alerta de Límite Diario',
+        'Se ha distribuido el 80% de las raciones presupuestadas para la jornada de hoy.',
         'warning'
       );
     } else if (preset === 3) {
@@ -186,7 +186,7 @@ export default function NotificationCenter({
             onClick={() => triggerPresetNotif(2)}
             className="flex-1 bg-white hover:bg-[#F9B719]/6 border border-slate-200 text-[10px] font-bold text-slate-700 py-1.5 px-2 rounded-lg transition-all cursor-pointer text-left truncate hover:text-[#342D86] shadow-xs"
           >
-            🟡 Avisar Umbral Kcal
+            🟡 Avisar Límite Raciones
           </button>
           <button
             type="button"

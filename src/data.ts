@@ -69,7 +69,7 @@ export const HOSPITAL_WORKERS: Worker[] = [
     service: 'Mantenimiento y Auxiliar',
     role: 'Técnico de Calderas',
     photoUrl: 'https://images.unsplash.com/photo-1560250097-0b93528c311a?auto=format&fit=crop&w=256&h=256&q=80',
-    status: 'VACATION'
+    status: 'ACTIVE'
   },
   {
     id: 'w8',
@@ -79,7 +79,7 @@ export const HOSPITAL_WORKERS: Worker[] = [
     service: 'Ginecobstetricia y Neonatología',
     role: 'Médico Residente II',
     photoUrl: 'https://images.unsplash.com/photo-1594824813573-246434de83fb?auto=format&fit=crop&w=256&h=256&q=80',
-    status: 'VACATION'
+    status: 'ACTIVE'
   },
   {
     id: 'w9',

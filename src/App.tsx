@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
   Worker, ScanRecord, MealSchedule, ScanStatus, 
@@ -21,7 +21,7 @@ import LoginScreen from './components/LoginScreen';
 import { 
   HeartPulse, Clock, Calendar, CheckSquare, Layers, HelpCircle, 
   Settings, Radio, Lightbulb, Bell, AlertCircle, Info, Star, LogOut,
-  Activity
+  Activity, ChevronDown
 } from 'lucide-react';
 
 export default function App() {
@@ -35,6 +35,24 @@ export default function App() {
 
   const [activeTab, setActiveTab] = useState<'scan' | 'metrics' | 'history'>('scan');
   const [showNotifDropdown, setShowNotifDropdown] = useState(false);
+  const notifDropdownRef = useRef<HTMLDivElement>(null);
+  const [showTimeDropdown, setShowTimeDropdown] = useState(false);
+  const timeDropdownRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (notifDropdownRef.current && !notifDropdownRef.current.contains(event.target as Node)) {
+        setShowNotifDropdown(false);
+      }
+      if (timeDropdownRef.current && !timeDropdownRef.current.contains(event.target as Node)) {
+        setShowTimeDropdown(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, []);
 
   const handleLoginSuccess = (usr: string) => {
     setIsLoggedIn(true);
@@ -78,7 +96,8 @@ export default function App() {
       hour: '2-digit', 
       minute: '2-digit', 
       second: '2-digit',
-      hour12: true 
+      hour12: true,
+      timeZone: 'America/Lima'
     });
   }, [currentDateTime]);
 
@@ -87,15 +106,26 @@ export default function App() {
       weekday: 'long',
       year: 'numeric',
       month: 'long',
-      day: 'numeric'
+      day: 'numeric',
+      timeZone: 'America/Lima'
     });
   }, [currentDateTime]);
 
   const formattedShortDateStr = useMemo(() => {
-    const year = currentDateTime.getFullYear();
-    const month = String(currentDateTime.getMonth() + 1).padStart(2, '0');
-    const day = String(currentDateTime.getDate()).padStart(2, '0');
-    return `${year}-${month}-${day}`;
+    try {
+      const formatter = new Intl.DateTimeFormat('fr-CA', { 
+        timeZone: 'America/Lima', 
+        year: 'numeric', 
+        month: '2-digit', 
+        day: '2-digit' 
+      });
+      return formatter.format(currentDateTime);
+    } catch (e) {
+      const year = currentDateTime.getFullYear();
+      const month = String(currentDateTime.getMonth() + 1).padStart(2, '0');
+      const day = String(currentDateTime.getDate()).padStart(2, '0');
+      return `${year}-${month}-${day}`;
+    }
   }, [currentDateTime]);
 
   // 2. Persistent States from LocalStorage (or fallbacks)
@@ -123,6 +153,7 @@ export default function App() {
   const [lastScanStatus, setLastScanStatus] = useState<ScanStatus | null>(null);
   const [lastScanMessage, setLastScanMessage] = useState<string | null>(null);
   const [lastScanTime, setLastScanTime] = useState<string | null>(null);
+  const [lastScanAuthByAdmin, setLastScanAuthByAdmin] = useState<boolean>(false);
 
   // 3. Dynamic food schedule calculations
   const activeMeal = useMemo((): MealSchedule | null => {
@@ -144,9 +175,9 @@ export default function App() {
   }, [currentDateTime]);
 
   // 4. Primary Scan Processing Handler
-  const handleScanResult = (dni: string, authOverride: boolean = false) => {
+  const handleScanResult = (dni: string) => {
     // Current timestamp strings
-    const scanTimeStr = currentDateTime.toLocaleTimeString('es-PE', { hour12: false });
+    const scanTimeStr = currentDateTime.toLocaleTimeString('es-PE', { hour12: false, timeZone: 'America/Lima' });
     const scanDateStr = formattedShortDateStr;
 
     // Look up employee
@@ -163,31 +194,12 @@ export default function App() {
         service: 'Sin Servicio',
         role: 'Desconocido',
         photoUrl: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=256&h=256&q=80',
-        status: 'VACATION'
+        status: 'ACTIVE'
       });
       setLastScanStatus('INVALID_CODE');
+      setLastScanAuthByAdmin(false);
       setLastScanMessage(`El DNI ${dni} ingresado no se encuentra en la base de datos de trabajadores clínicos del hospital.`);
       setLastScanTime(scanTimeStr);
-
-      // Log event to records list
-      const failRecord: ScanRecord = {
-        id: `scan-fail-${Date.now()}`,
-        workerId: 'unknown',
-        names: 'No Identificado',
-        lastNames: 'Código Inválido',
-        dni,
-        service: 'Externo',
-        role: 'Desconocido',
-        mealType: activeMeal?.type || 'ALMUERZO',
-        scanTime: scanTimeStr,
-        scanDate: scanDateStr,
-        status: 'INVALID_CODE',
-        statusMessage: 'Denegado - DNI inexistente',
-        calories: 0,
-        protein: 0,
-        carbs: 0
-      };
-      setRecords(prev => [failRecord, ...prev]);
 
       // Add push warning in center
       addNotification(
@@ -201,39 +213,6 @@ export default function App() {
     setLastScannedWorker(worker);
     setLastScanTime(scanTimeStr);
 
-    // 1. Vacation Block - VACATION workers are NOT allowed to consume any meals ("no pueda recibir ración si está de vacaciones")
-    if (worker.status === 'VACATION') {
-      playErrorBuzzer();
-      setLastScanStatus('SUSPENDED_WORKER'); // Employs the existing locked panel UI styles
-      setLastScanMessage(`¡TRABAJADOR EN VACACIONES! El empleado ${worker.names} ${worker.lastNames} no está autorizado para recibir raciones. El personal de vacaciones se encuentra excluido temporalmente de los beneficios de comedor del Instituto Nacional de Salud del Niño.`);
-      
-      const lockedRecord: ScanRecord = {
-        id: `scan-${Date.now()}`,
-        workerId: worker.id,
-        names: worker.names,
-        lastNames: worker.lastNames,
-        dni: worker.dni,
-        service: worker.service,
-        role: worker.role,
-        mealType: activeMeal?.type || 'ALMUERZO',
-        scanTime: scanTimeStr,
-        scanDate: scanDateStr,
-        status: 'SUSPENDED_WORKER',
-        statusMessage: 'Denegado - Trabajador en Vacaciones',
-        calories: 0,
-        protein: 0,
-        carbs: 0
-      };
-      setRecords(prev => [lockedRecord, ...prev]);
-
-      addNotification(
-        '🚨 Bloqueo por Vacaciones',
-        `Intento de consumo denegado por personal de vacaciones (${worker.lastNames}, ${worker.names}).`,
-        'alert'
-      );
-      return;
-    }
-
     // 2. Duplicate Check - If they already ate today, they are blocked. NO EXCEPTIONS ALLOWED!
     const isDuplicate = activeMeal ? records.some(r => 
       r.workerId === worker.id && 
@@ -245,6 +224,7 @@ export default function App() {
     if (isDuplicate) {
       playErrorBuzzer();
       setLastScanStatus('DUPLICATE');
+      setLastScanAuthByAdmin(false);
       
       const prevScan = records.find(r => 
         r.workerId === worker.id && 
@@ -256,6 +236,7 @@ export default function App() {
 
       setLastScanMessage(`¡TICKET DUPLICADO DETECTADO! El empleado ya consumió su ración asignada de ${activeMeal!.label} hoy a las ${prevTime}. Por directiva estricta institucional, no se permite ninguna ración de excepción ni doble entrega.`);
       
+      // Register duplicate ticket scan in daily history
       const duplicateRecord: ScanRecord = {
         id: `scan-${Date.now()}`,
         workerId: worker.id,
@@ -268,14 +249,14 @@ export default function App() {
         scanTime: scanTimeStr,
         scanDate: scanDateStr,
         status: 'DUPLICATE',
-        statusMessage: `Denegado - Duplicado de ${activeMeal!.label} (Consumos múltiples prohibidos)`,
+        statusMessage: `Intento de Duplicado de Ración de ${activeMeal!.label}`,
         calories: 0,
         protein: 0,
         carbs: 0
       };
       
       setRecords(prev => [duplicateRecord, ...prev]);
-      
+
       addNotification(
         '🚨 Duplicado Rechazado',
         `Se bloqueó ración doble para ${worker.lastNames}, ${worker.names}. Sin excepciones.`,
@@ -284,11 +265,40 @@ export default function App() {
       return;
     }
 
-    // 3. Special Override Bypass - Only allowed for OUT_OF_SCHEDULE / FUERA DE HORARIO
-    if (authOverride) {
+    // 3. Out of Clinical Hours Check
+    if (!activeMeal) {
+      playWarningChime();
+      setLastScanStatus('OUT_OF_SCHEDULE');
+      setLastScanAuthByAdmin(false);
+      setLastScanMessage(`FUERA DE HORARIO: No existe un turno de alimentación activo para este horario. Pídele al administrador autorizar la ración especial.`);
+      
+      addNotification(
+        '⚠️ Fuera de Horario',
+        `${worker.lastNames}, ${worker.names} escaneó ticket fuera de horario general. Admite excepción razonada.`,
+        'warning'
+      );
+      return;
+    }
+
+    // 4. PENDING SUCCESS SCENARIO - Normal within schedule & conditions met
+    playWarningChime();
+    setLastScanStatus('PENDING_VALID');
+    setLastScanAuthByAdmin(false);
+    setLastScanMessage(`Lectura de DNI detectada con éxito. El trabajador figura activo. Presiona "Autorizar Consumo" para habilitarlo y confirmar la ración de ${activeMeal.label}.`);
+  };
+
+  const handleConfirmScan = (isOverride: boolean = false) => {
+    if (!lastScannedWorker) return;
+
+    const scanTimeStr = currentDateTime.toLocaleTimeString('es-PE', { hour12: false, timeZone: 'America/Lima' });
+    const scanDateStr = formattedShortDateStr;
+
+    if (isOverride) {
+      // Out of schedule authorization
       playSuccessBeep();
       setLastScanStatus('VALID_COMPLETED');
-      setLastScanMessage(`Autorizado de Excepción - El trabajador ${worker.names} ha sido habilitado con autorización manual para consumir ración fuera de horario.`);
+      setLastScanAuthByAdmin(true);
+      setLastScanMessage(`Autorizado de Excepción - El trabajador ${lastScannedWorker.names} ha sido habilitado con autorización manual para consumir ración fuera de horario.`);
       
       const mockCalories = activeMeal?.calories || 600;
       const mockProtein = activeMeal?.protein || 28;
@@ -296,12 +306,12 @@ export default function App() {
 
       const overriddenRecord: ScanRecord = {
         id: `scan-${Date.now()}`,
-        workerId: worker.id,
-        names: worker.names,
-        lastNames: worker.lastNames,
-        dni: worker.dni,
-        service: worker.service,
-        role: worker.role,
+        workerId: lastScannedWorker.id,
+        names: lastScannedWorker.names,
+        lastNames: lastScannedWorker.lastNames,
+        dni: lastScannedWorker.dni,
+        service: lastScannedWorker.service,
+        role: lastScannedWorker.role,
         mealType: activeMeal?.type || 'ALMUERZO',
         scanTime: scanTimeStr,
         scanDate: scanDateStr,
@@ -316,80 +326,48 @@ export default function App() {
       setRecords(prev => [overriddenRecord, ...prev]);
       addNotification(
         '⚙️ Excepción Registrada',
-        `Autorización excepcional de ración fuera de horario para ${worker.lastNames}, ${worker.names}.`,
+        `Autorización excepcional de ración fuera de horario para ${lastScannedWorker.lastNames}, ${lastScannedWorker.names}.`,
         'info'
       );
-      return;
-    }
+    } else {
+      // Normal schedule authorization
+      if (!activeMeal) return;
 
-    // 4. Out of Clinical Hours Check
-    if (!activeMeal) {
-      playWarningChime();
-      setLastScanStatus('OUT_OF_SCHEDULE');
-      setLastScanMessage(`FUERA DE HORARIO: No existe un turno de alimentación activo para este horario. Pídele al administrador autorizar la ración especial.`);
-      
-      const outHourRecord: ScanRecord = {
+      playSuccessBeep();
+      setLastScanStatus('VALID_COMPLETED');
+      setLastScanAuthByAdmin(false);
+      setLastScanMessage(`¡AUTORIZADO! Se ha acreditado de manera exitosa la ración de ${activeMeal.label} para el empleado ${lastScannedWorker.names} ${lastScannedWorker.lastNames}.`);
+
+      const validRecord: ScanRecord = {
         id: `scan-${Date.now()}`,
-        workerId: worker.id,
-        names: worker.names,
-        lastNames: worker.lastNames,
-        dni: worker.dni,
-        service: worker.service,
-        role: worker.role,
-        mealType: 'ALMUERZO', // default category
+        workerId: lastScannedWorker.id,
+        names: lastScannedWorker.names,
+        lastNames: lastScannedWorker.lastNames,
+        dni: lastScannedWorker.dni,
+        service: lastScannedWorker.service,
+        role: lastScannedWorker.role,
+        mealType: activeMeal.type,
         scanTime: scanTimeStr,
         scanDate: scanDateStr,
-        status: 'OUT_OF_SCHEDULE',
-        statusMessage: `Denegado - Ticket fuera de horario general`,
-        calories: 0,
-        protein: 0,
-        carbs: 0
+        status: 'VALID_COMPLETED',
+        statusMessage: `Autorizado - Suministro de ración para ${activeMeal.label}`,
+        calories: activeMeal.calories,
+        protein: activeMeal.protein,
+        carbs: activeMeal.carbs
       };
-      setRecords(prev => [outHourRecord, ...prev]);
 
+      setRecords(prev => [validRecord, ...prev]);
       addNotification(
-        '⚠️ Fuera de Horario',
-        `${worker.lastNames}, ${worker.names} escaneó ticket fuera de horario general. Admite excepción razonada.`,
-        'warning'
+        '🟢 Consumo Registrado',
+        `${lastScannedWorker.names} ${lastScannedWorker.lastNames} (${lastScannedWorker.service}) ha consumido ${activeMeal.label}.`,
+        'success'
       );
-      return;
     }
-
-    // 5. SUCCESS SCENARIO - Normal within schedule & conditions met
-    playSuccessBeep();
-    setLastScanStatus('VALID_COMPLETED');
-    setLastScanMessage(`¡AUTORIZADO! Se ha acreditado de manera exitosa la ración de ${activeMeal.label} para el empleado ${worker.names} ${worker.lastNames}.`);
-
-    const validRecord: ScanRecord = {
-      id: `scan-${Date.now()}`,
-      workerId: worker.id,
-      names: worker.names,
-      lastNames: worker.lastNames,
-      dni: worker.dni,
-      service: worker.service,
-      role: worker.role,
-      mealType: activeMeal.type,
-      scanTime: scanTimeStr,
-      scanDate: scanDateStr,
-      status: 'VALID_COMPLETED',
-      statusMessage: `Autorizado - Suministro de ración para ${activeMeal.label}`,
-      calories: activeMeal.calories,
-      protein: activeMeal.protein,
-      carbs: activeMeal.carbs
-    };
-
-    setRecords(prev => [validRecord, ...prev]);
-
-    addNotification(
-      '🟢 Consumo Registrado',
-      `${worker.names} ${worker.lastNames} (${worker.service}) ha consumido ${activeMeal.label}.`,
-      'success'
-    );
   };
 
   // 5. Notifications helpers
   const addNotification = (title: string, message: string, type: 'info' | 'warning' | 'success' | 'alert') => {
-    const timeStr = currentDateTime.toLocaleTimeString('es-PE', { hour: '2-digit', minute: '2-digit' });
+    const timeStr = currentDateTime.toLocaleTimeString('es-PE', { hour: '2-digit', minute: '2-digit', timeZone: 'America/Lima' });
     const newNotif: SystemNotification = {
       id: `notif-${Date.now()}`,
       title,
@@ -596,16 +574,151 @@ export default function App() {
                     {formattedTime}
                   </span>
                   <span className="text-[7.5px] lg:text-[8px] text-slate-500 font-sans block leading-none mt-0.5 font-medium whitespace-nowrap">
-                    {currentDateTime.toLocaleDateString('es-PE', { month: 'short', day: '2-digit' })} ({useRealTime ? 'HORA BASE' : 'SIMULADA'})
+                    {currentDateTime.toLocaleDateString('es-PE', { month: 'short', day: '2-digit', timeZone: 'America/Lima' })} ({useRealTime ? 'HORA BASE' : 'SIMULADA'})
                   </span>
                 </div>
+              </div>
+
+              {/* Simulation Dropdown Selector */}
+              <div ref={timeDropdownRef} className="relative flex justify-center py-1 sm:py-0 px-1">
+                <button
+                  type="button"
+                  onClick={() => setShowTimeDropdown(!showTimeDropdown)}
+                  className={`px-2.5 py-1.5 rounded-lg lg:rounded-xl transition-all hover:scale-105 active:scale-[0.96] cursor-pointer flex items-center justify-center gap-1 text-[10px] font-black uppercase border border-slate-200 shadow-xs ${
+                    showTimeDropdown 
+                      ? 'bg-[#342D86] text-white' 
+                      : 'bg-white text-slate-700 hover:bg-slate-100'
+                  }`}
+                  id="simulator-clock-btn"
+                  title="Simular diferentes horarios"
+                >
+                  <Clock className="w-3.5 h-3.5" />
+                  <span>Configurar Hora</span>
+                  <ChevronDown className="w-3 h-3 ml-0.5" />
+                </button>
+
+                {/* Dropdown Options List */}
+                <AnimatePresence>
+                  {showTimeDropdown && (
+                    <motion.div
+                      initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                      animate={{ opacity: 1, y: 0, scale: 1 }}
+                      exit={{ opacity: 0, y: 10, scale: 0.95 }}
+                      transition={{ duration: 0.15 }}
+                      className="absolute right-0 sm:left-0 top-full mt-2 w-48 bg-white border border-slate-200 rounded-xl shadow-xl z-[60] p-1.5 block text-left"
+                      style={{ transformOrigin: 'top left' }}
+                    >
+                      <div className="text-[8px] font-bold text-slate-400 px-2 py-1 uppercase tracking-wider border-b border-slate-100 select-none">
+                        Turnos de Comida
+                      </div>
+                      
+                      {/* Desayuno: 08:30 AM */}
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setSimulatedHour(8, 30);
+                          addNotification(
+                            '🕒 Hora Simulada',
+                            'Se ha simulado el reloj del sistema en el horario de Desayuno (08:30 AM).',
+                            'info'
+                          );
+                          setShowTimeDropdown(false);
+                        }}
+                        className="w-full text-left px-2.5 py-1.5 rounded-lg hover:bg-slate-50 text-[11px] font-semibold text-slate-700 flex items-center justify-between cursor-pointer"
+                      >
+                        <span className="flex items-center gap-1.5 font-sans font-bold">
+                          ☀️ Desayuno
+                        </span>
+                        <span className="font-mono text-[9px] bg-amber-50 text-amber-700 px-1 rounded font-black">
+                          08:30
+                        </span>
+                      </button>
+
+                      {/* Almuerzo: 13:15 PM */}
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setSimulatedHour(13, 15);
+                          addNotification(
+                            '🕒 Hora Simulada',
+                            'Se ha simulado el reloj del sistema en el horario de Almuerzo de Turno (01:15 PM).',
+                            'info'
+                          );
+                          setShowTimeDropdown(false);
+                        }}
+                        className="w-full text-left px-2.5 py-1.5 rounded-lg hover:bg-slate-50 text-[11px] font-semibold text-slate-700 flex items-center justify-between cursor-pointer"
+                      >
+                        <span className="flex items-center gap-1.5 font-sans font-bold">
+                          🥗 Almuerzo
+                        </span>
+                        <span className="font-mono text-[9px] bg-emerald-50 text-emerald-700 px-1 rounded font-black">
+                          13:15
+                        </span>
+                      </button>
+
+                      {/* Cena: 20:45 PM */}
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setSimulatedHour(20, 45);
+                          addNotification(
+                            '🕒 Hora Simulada',
+                            'Se ha simulado el reloj del sistema en el horario de Cena Nutritiva (08:45 PM).',
+                            'info'
+                          );
+                          setShowTimeDropdown(false);
+                        }}
+                        className="w-full text-left px-2.5 py-1.5 rounded-lg hover:bg-slate-50 text-[11px] font-semibold text-slate-700 flex items-center justify-between cursor-pointer"
+                      >
+                        <span className="flex items-center gap-1.5 font-sans font-bold">
+                          🌌 Cena
+                        </span>
+                        <span className="font-mono text-[9px] bg-indigo-50 text-indigo-700 px-1 rounded font-black">
+                          20:45
+                        </span>
+                      </button>
+
+                      <div className="h-px bg-slate-100 my-1"></div>
+
+                      <div className="text-[8px] font-bold text-slate-400 px-2 py-1 uppercase tracking-wider select-none">
+                        Tiempo Real
+                      </div>
+
+                      {/* Hora Real */}
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setUseRealTime(true);
+                          addNotification(
+                            '🟢 Hora Real Activa',
+                            'El reloj del sistema ahora utiliza el tiempo real del dispositivo.',
+                            'success'
+                          );
+                          setShowTimeDropdown(false);
+                        }}
+                        className={`w-full text-left px-2.5 py-1.5 rounded-lg text-[11px] font-bold flex items-center justify-between cursor-pointer ${
+                          useRealTime 
+                            ? 'bg-[#342D86]/10 text-[#342D86]' 
+                            : 'hover:bg-slate-50 text-slate-700'
+                        }`}
+                      >
+                        <span className="flex items-center gap-1.5 font-sans">
+                          ⏳ Hora Real
+                        </span>
+                        {useRealTime && (
+                          <span className="w-1.5 h-1.5 bg-[#00A089] rounded-full animate-pulse" />
+                        )}
+                      </button>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
               </div>
 
               {/* Time Source Selector Divider */}
               <div className="h-px sm:h-3.5 lg:h-7 w-full sm:w-px bg-slate-200 shrink-0"></div>
 
               {/* Notification Bell Button & Dropdown */}
-              <div className="relative flex justify-center py-1 sm:py-0 px-1">
+              <div ref={notifDropdownRef} className="relative flex justify-center py-1 sm:py-0 px-1">
                 <button
                   type="button"
                   onClick={() => setShowNotifDropdown(!showNotifDropdown)}
@@ -813,9 +926,11 @@ export default function App() {
           >
             <Calendar className="w-4 h-4" />
             <span>Historial y Control Diario</span>
-            {notifications.filter(n => !n.read).length > 0 && (
-              <span className="bg-rose-500 text-white text-[9px] font-black px-1.5 py-0.5 rounded-full h-4 min-w-4 flex items-center justify-center animate-pulse">
-                {notifications.filter(n => !n.read).length}
+            {records.length > 0 && (
+              <span className={`text-[9px] font-black tracking-wider px-2 py-0.5 rounded-full ${
+                activeTab === 'history' ? 'bg-white/20 text-white' : 'bg-slate-100 text-slate-700'
+              }`}>
+                {records.length} registros
               </span>
             )}
           </button>
@@ -835,15 +950,18 @@ export default function App() {
               >
                 <ScannerTerminal
                   onScanResult={handleScanResult}
+                  onConfirmScan={handleConfirmScan}
                   activeMeal={activeMeal}
                   lastScannedWorker={lastScannedWorker}
                   lastScanStatus={lastScanStatus}
                   lastScanMessage={lastScanMessage}
                   lastScanTime={lastScanTime}
+                  lastScanAuthByAdmin={lastScanAuthByAdmin}
                   onClearLastScan={() => {
                     setLastScannedWorker(null);
                     setLastScanStatus(null);
                     setLastScanMessage(null);
+                    setLastScanAuthByAdmin(false);
                   }}
                   onRevokeLastScan={handleRevokeLastScan}
                   isSimulatedTimeActive={!useRealTime}
