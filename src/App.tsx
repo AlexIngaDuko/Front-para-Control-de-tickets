@@ -16,12 +16,16 @@ import ScanHistory from './components/ScanHistory';
 import NutritionCharts from './components/NutritionCharts';
 import NotificationCenter from './components/NotificationCenter';
 import LoginScreen from './components/LoginScreen';
+import CriticalWorkers from './components/CriticalWorkers';
+
+// Critical hospital workers data
+import { CRITICAL_HOSPITAL_WORKERS } from './data_critical';
 
 // Icons
 import { 
   HeartPulse, Clock, Calendar, CheckSquare, Layers, HelpCircle, 
   Settings, Radio, Lightbulb, Bell, AlertCircle, Info, Star, LogOut,
-  Activity, ChevronDown
+  Activity, ChevronDown, Users
 } from 'lucide-react';
 
 export default function App() {
@@ -33,7 +37,7 @@ export default function App() {
     return localStorage.getItem('insn_food_logged_user') || 'admin/insn';
   });
 
-  const [activeTab, setActiveTab] = useState<'scan' | 'metrics' | 'history'>('scan');
+  const [activeTab, setActiveTab] = useState<'scan' | 'critical' | 'metrics' | 'history'>('scan');
   const [showNotifDropdown, setShowNotifDropdown] = useState(false);
   const notifDropdownRef = useRef<HTMLDivElement>(null);
   const [showTimeDropdown, setShowTimeDropdown] = useState(false);
@@ -69,7 +73,7 @@ export default function App() {
   };
 
   // 1. Time state management (Device real-time vs Manual simulated time)
-  const [useRealTime, setUseRealTime] = useState<boolean>(false);
+  const [useRealTime, setUseRealTime] = useState<boolean>(true);
   const [simulatedDateTime, setSimulatedDateTime] = useState<Date>(() => {
     // We default to exactly 2026-05-25 at 09:13 AM to easily matching the provided ticket image!
     const date = new Date('2026-05-25T09:13:00');
@@ -181,7 +185,8 @@ export default function App() {
     const scanDateStr = formattedShortDateStr;
 
     // Look up employee
-    const worker = HOSPITAL_WORKERS.find(w => w.dni.trim().toUpperCase() === dni.trim().toUpperCase());
+    const ALL_WORKERS = [...HOSPITAL_WORKERS, ...CRITICAL_HOSPITAL_WORKERS];
+    const worker = ALL_WORKERS.find(w => w.dni.trim().toUpperCase() === dni.trim().toUpperCase());
 
     if (!worker) {
       // DNI not exist error
@@ -361,6 +366,51 @@ export default function App() {
         '🟢 Consumo Registrado',
         `${lastScannedWorker.names} ${lastScannedWorker.lastNames} (${lastScannedWorker.service}) ha consumido ${activeMeal.label}.`,
         'success'
+      );
+    }
+  };
+
+  const handleCriticalWorkersAuthorize = (workers: Worker[], isExceptional: boolean, selectedMealType: MealType) => {
+    const scanTimeStr = currentDateTime.toLocaleTimeString('es-PE', { hour12: false, timeZone: 'America/Lima' });
+    const scanDateStr = formattedShortDateStr;
+    const activeSched = MEAL_SCHEDULES.find(s => s.type === selectedMealType);
+    
+    const mockCalories = activeSched?.calories || (selectedMealType === 'DESAYUNO' ? 450 : selectedMealType === 'ALMUERZO' ? 750 : 600);
+    const mockProtein = activeSched?.protein || (selectedMealType === 'DESAYUNO' ? 18 : selectedMealType === 'ALMUERZO' ? 32 : 25);
+    const mockCarbs = activeSched?.carbs || (selectedMealType === 'DESAYUNO' ? 62 : selectedMealType === 'ALMUERZO' ? 95 : 80);
+
+    const newRecords: ScanRecord[] = workers.map((w, index) => ({
+      id: `scan-${Date.now()}-${w.id}-${index}`,
+      workerId: w.id,
+      names: w.names,
+      lastNames: w.lastNames,
+      dni: w.dni,
+      service: w.service,
+      role: w.role,
+      mealType: selectedMealType,
+      scanTime: scanTimeStr,
+      scanDate: scanDateStr,
+      status: 'VALID_COMPLETED',
+      statusMessage: isExceptional 
+        ? `Autorizado Excepcional - Registro manual (Fuera de Horario)`
+        : `Autorizado - Suministro de ración para ${selectedMealType}`,
+      calories: mockCalories,
+      protein: mockProtein,
+      carbs: mockCarbs,
+      authByAdmin: isExceptional
+    }));
+
+    if (newRecords.length > 0) {
+      setRecords(prev => [...newRecords, ...prev]);
+      playSuccessBeep();
+
+      const namesStr = workers.map(w => `${w.names} ${w.lastNames}`).slice(0, 3).join(', ');
+      const overflowStr = workers.length > 3 ? ` y ${workers.length - 3} profesionales más` : '';
+
+      addNotification(
+        isExceptional ? '⚙️ Excepción Especial' : '🟢 Raciones Emitidas por Lote',
+        `Se autorizaron ${workers.length} raciones de ${selectedMealType} para personal crítico en ${workers[0].service} (${namesStr}${overflowStr}).`,
+        isExceptional ? 'warning' : 'success'
       );
     }
   };
@@ -883,11 +933,11 @@ export default function App() {
       <main className="flex-1 max-w-7xl w-full mx-auto p-4 sm:p-6 space-y-6">
         
         {/* Navigation Tabs Bar */}
-        <div className="flex border-b border-slate-200 bg-white/85 backdrop-blur-md rounded-2xl p-1.5 shadow-sm overflow-x-auto select-none gap-1 sm:gap-2 border border-slate-200/60" id="main-navigation-tabs">
+        <div className="grid grid-cols-4 w-full overflow-hidden bg-white/85 backdrop-blur-md rounded-2xl p-1.5 shadow-sm select-none gap-1 sm:gap-2 border border-slate-200/60" id="main-navigation-tabs">
           <button
             type="button"
             onClick={() => setActiveTab('scan')}
-            className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs sm:text-sm font-black transition-all duration-200 cursor-pointer uppercase shrink-0 ${
+            className={`flex flex-col md:flex-row items-center justify-center text-center gap-1 sm:gap-1.5 md:gap-2 px-1 sm:px-2 md:px-4 py-2 sm:py-2.5 rounded-xl text-[8.5px] sm:text-[10px] md:text-xs lg:text-[13px] font-black transition-all duration-200 cursor-pointer uppercase ${
               activeTab === 'scan'
                 ? 'bg-[#342D86] text-white shadow-md'
                 : 'text-slate-600 hover:bg-slate-100 hover:text-[#342D86]'
@@ -899,38 +949,56 @@ export default function App() {
 
           <button
             type="button"
+            onClick={() => setActiveTab('critical')}
+            className={`flex flex-col md:flex-row items-center justify-center text-center gap-1 sm:gap-1.5 md:gap-2 px-1 sm:px-2 md:px-4 py-2 sm:py-2.5 rounded-xl text-[8.5px] sm:text-[10px] md:text-xs lg:text-[13px] font-black transition-all duration-200 cursor-pointer uppercase ${
+              activeTab === 'critical'
+                ? 'bg-[#342D86] text-white shadow-md'
+                : 'text-slate-600 hover:bg-slate-100 hover:text-[#342D86]'
+            }`}
+          >
+            <Users className="w-4 h-4" />
+            <span className="truncate">Trabajador Crítico</span>
+            <span className={`text-[8px] sm:text-[9px] font-black tracking-wider px-1 sm:px-2 py-0.5 rounded-full shrink-0 ${
+              activeTab === 'critical' ? 'bg-white/20 text-white' : 'bg-rose-50 text-rose-700'
+            }`}>
+              90 per.
+            </span>
+          </button>
+
+          <button
+            type="button"
             onClick={() => setActiveTab('metrics')}
-            className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs sm:text-sm font-black transition-all duration-200 cursor-pointer uppercase shrink-0 ${
+            className={`flex flex-col md:flex-row items-center justify-center text-center gap-1 sm:gap-1.5 md:gap-2 px-1 sm:px-2 md:px-4 py-2 sm:py-2.5 rounded-xl text-[8.5px] sm:text-[10px] md:text-xs lg:text-[13px] font-black transition-all duration-200 cursor-pointer uppercase ${
               activeTab === 'metrics'
                 ? 'bg-[#342D86] text-white shadow-md'
                 : 'text-slate-600 hover:bg-slate-100 hover:text-[#342D86]'
             }`}
           >
             <Activity className="w-4 h-4" />
-            <span>Métricas Nutricionales</span>
-            <span className={`text-[9px] font-black tracking-wider px-2 py-0.5 rounded-full ${
+            <span className="truncate">Métricas</span>
+            <span className={`text-[8px] sm:text-[9px] font-black tracking-wider px-1 sm:px-2 py-0.5 rounded-full shrink-0 ${
               activeTab === 'metrics' ? 'bg-white/20 text-white' : 'bg-[#E2F1F0] text-[#00A089]'
             }`}>
-              {records.filter(r => r.status === 'VALID_COMPLETED' || (r.status === 'OUT_OF_SCHEDULE' && r.authByAdmin)).length} raciones
+              {records.filter(r => r.status === 'VALID_COMPLETED' || (r.status === 'OUT_OF_SCHEDULE' && r.authByAdmin)).length} rac.
             </span>
           </button>
 
           <button
             type="button"
             onClick={() => setActiveTab('history')}
-            className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs sm:text-sm font-black transition-all duration-200 cursor-pointer uppercase shrink-0 ${
+            className={`flex flex-col md:flex-row items-center justify-center text-center gap-1 sm:gap-1.5 md:gap-2 px-1 sm:px-2 md:px-4 py-2 sm:py-2.5 rounded-xl text-[8.5px] sm:text-[10px] md:text-xs lg:text-[13px] font-black transition-all duration-200 cursor-pointer uppercase ${
               activeTab === 'history'
                 ? 'bg-[#342D86] text-white shadow-md'
                 : 'text-slate-600 hover:bg-slate-100 hover:text-[#342D86]'
             }`}
           >
             <Calendar className="w-4 h-4" />
-            <span>Historial y Control Diario</span>
+            <span className="truncate">Historial</span>
             {records.length > 0 && (
-              <span className={`text-[9px] font-black tracking-wider px-2 py-0.5 rounded-full ${
+              <span className={`text-[8px] sm:text-[9px] font-black tracking-wider px-1 sm:px-2 py-0.5 rounded-full shrink-0 ${
                 activeTab === 'history' ? 'bg-white/20 text-white' : 'bg-slate-100 text-slate-700'
               }`}>
-                {records.length} registros
+                {records.length} reg.
               </span>
             )}
           </button>
@@ -965,6 +1033,25 @@ export default function App() {
                   }}
                   onRevokeLastScan={handleRevokeLastScan}
                   isSimulatedTimeActive={!useRealTime}
+                />
+              </motion.div>
+            )}
+
+            {activeTab === 'critical' && (
+              <motion.div
+                key="critical-tab"
+                initial={{ opacity: 0, y: 15 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -15 }}
+                transition={{ duration: 0.2 }}
+                className="max-w-7xl mx-auto w-full"
+              >
+                <CriticalWorkers
+                  records={records}
+                  onAuthorizeWorkers={handleCriticalWorkersAuthorize}
+                  activeMeal={activeMeal}
+                  formattedShortDateStr={formattedShortDateStr}
+                  currentDateTime={currentDateTime}
                 />
               </motion.div>
             )}

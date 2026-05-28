@@ -6,6 +6,7 @@ import {
 } from 'lucide-react';
 import { Worker, ScanStatus, MealType, MealSchedule } from '../types';
 import { HOSPITAL_WORKERS } from '../data';
+import { CRITICAL_HOSPITAL_WORKERS } from '../data_critical';
 
 interface ScannerTerminalProps {
   onScanResult: (dni: string) => void;
@@ -104,7 +105,8 @@ export default function ScannerTerminal({
   };
 
   const addRandomScanLog = () => {
-    const randomWorker = HOSPITAL_WORKERS[Math.floor(Math.random() * HOSPITAL_WORKERS.length)];
+    const ALL_WORKERS = [...HOSPITAL_WORKERS, ...CRITICAL_HOSPITAL_WORKERS];
+    const randomWorker = ALL_WORKERS[Math.floor(Math.random() * ALL_WORKERS.length)];
     onScanResult(randomWorker.dni);
   };
 
